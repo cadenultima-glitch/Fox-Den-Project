@@ -1,0 +1,2704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fox Den Project V.1.0.0</title>
+  <style>
+    /* ==========================================================================
+       1. CSS VARIABLES & THEME CONFIGURATION
+       ========================================================================== */
+    :root {
+      --bg-primary: #050507;
+      --bg-secondary: #0b0b10;
+      --bg-card: rgba(16, 16, 24, 0.72);
+      --bg-card-hover: rgba(24, 22, 32, 0.88);
+      --bg-glass: rgba(12, 12, 18, 0.65);
+
+      --accent-orange: #ff6a00;
+      --accent-amber: #ff9500;
+      --accent-ember: #ff3c00;
+      --accent-gold: #ffb74d;
+      --accent-glow: rgba(255, 106, 0, 0.45);
+      --accent-glow-soft: rgba(255, 106, 0, 0.16);
+
+      --text-primary: #f5f5f7;
+      --text-secondary: #b4b6c4;
+      --text-muted: #7c7f91;
+
+      --border-glass: rgba(255, 106, 0, 0.22);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+
+      --status-lc: #22c55e;
+      --status-nt: #f59e0b;
+      --status-en: #ef4444;
+
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-pill: 999px;
+
+      --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-smooth: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+
+      --font-sans: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    /* ==========================================================================
+       2. RESET, BASE STYLES & CUSTOM SCROLLBAR
+       ========================================================================== */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      font-size: 16px;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      overflow-x: hidden;
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.65;
+      overflow-x: hidden;
+      position: relative;
+      min-height: 100vh;
+    }
+
+    /* Custom Futuristic Scrollbar */
+    ::-webkit-scrollbar {
+      width: 10px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-primary);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, var(--accent-ember), var(--accent-orange), var(--accent-amber));
+      border-radius: 5px;
+      border: 2px solid var(--bg-primary);
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--accent-amber);
+    }
+
+    a {
+      color: var(--accent-amber);
+      text-decoration: none;
+      transition: color var(--transition-fast);
+    }
+    a:hover {
+      color: var(--accent-orange);
+    }
+
+    button {
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      outline: none;
+    }
+
+    /* ==========================================================================
+       3. BACKGROUND PARTICLE CANVAS & AMBIENT GLOWS
+       ========================================================================== */
+    #particle-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .ambient-grid {
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255, 106, 0, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 106, 0, 0.03) 1px, transparent 1px);
+      background-size: 48px 48px;
+      z-index: 0;
+      pointer-events: none;
+      mask-image: radial-gradient(circle at 50% 30%, black 25%, transparent 80%);
+    }
+
+    /* ==========================================================================
+       4. LOADING SCREEN
+       ========================================================================== */
+    #loading-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: radial-gradient(circle at center, #140c06 0%, #050507 75%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      transition: opacity 0.6s ease, visibility 0.6s ease;
+    }
+
+    #loading-screen.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .loader-logo {
+      width: 110px;
+      height: 110px;
+      filter: drop-shadow(0 0 24px var(--accent-glow));
+      animation: pulseFox 1.8s ease-in-out infinite;
+    }
+
+    .loader-title {
+      font-size: 1.15rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--accent-amber);
+      font-weight: 700;
+    }
+
+    .loader-bar-wrap {
+      width: 220px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-pill);
+      overflow: hidden;
+    }
+
+    .loader-bar {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-ember), var(--accent-orange), var(--accent-gold));
+      box-shadow: 0 0 12px var(--accent-orange);
+      animation: loadProgress 1.1s ease-out forwards;
+    }
+
+    @keyframes loadProgress {
+      to { width: 100%; }
+    }
+
+    @keyframes pulseFox {
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 18px var(--accent-glow)); }
+      50% { transform: scale(1.07); filter: drop-shadow(0 0 34px rgba(255, 149, 0, 0.8)); }
+    }
+
+    /* ==========================================================================
+       5. NAVIGATION BAR & MOBILE DRAWER
+       ========================================================================== */
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: rgba(5, 5, 7, 0.82);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-glass);
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.6);
+    }
+
+    .nav-container {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      color: var(--text-primary);
+      font-weight: 800;
+      font-size: 1.05rem;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+
+    .brand-logo {
+      width: 38px;
+      height: 38px;
+      filter: drop-shadow(0 0 8px var(--accent-glow));
+      transition: transform var(--transition-fast);
+    }
+
+    .brand:hover .brand-logo {
+      transform: rotate(-4deg) scale(1.06);
+    }
+
+    .brand-version {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--accent-orange);
+      background: var(--accent-glow-soft);
+      border: 1px solid var(--border-glass);
+      padding: 0.15rem 0.5rem;
+      border-radius: var(--radius-pill);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--text-secondary);
+      font-size: 0.86rem;
+      font-weight: 600;
+      padding: 0.45rem 0.75rem;
+      border-radius: var(--radius-sm);
+      transition: all var(--transition-fast);
+      white-space: nowrap;
+    }
+
+    .nav-links a:hover,
+    .nav-links a.active {
+      color: var(--text-primary);
+      background: var(--accent-glow-soft);
+      box-shadow: inset 0 0 0 1px var(--border-glass);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .fav-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(255, 106, 0, 0.12);
+      border: 1px solid var(--border-glass);
+      color: var(--accent-amber);
+      padding: 0.35rem 0.75rem;
+      border-radius: var(--radius-pill);
+      font-size: 0.8rem;
+      font-weight: 700;
+      transition: all var(--transition-fast);
+    }
+
+    .fav-pill:hover {
+      background: rgba(255, 106, 0, 0.25);
+      box-shadow: 0 0 14px var(--accent-glow-soft);
+    }
+
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      gap: 5px;
+      width: 40px;
+      height: 40px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-sm);
+      padding: 8px;
+    }
+
+    .hamburger span {
+      display: block;
+      width: 100%;
+      height: 2px;
+      background: var(--accent-orange);
+      border-radius: 2px;
+      transition: all 0.3s ease;
+    }
+
+    .hamburger.open span:nth-child(1) {
+      transform: translateY(7px) rotate(45deg);
+    }
+    .hamburger.open span:nth-child(2) {
+      opacity: 0;
+    }
+    .hamburger.open span:nth-child(3) {
+      transform: translateY(-7px) rotate(-45deg);
+    }
+
+    .mobile-menu {
+      display: none;
+      flex-direction: column;
+      padding: 1rem 1.5rem 1.5rem;
+      border-top: 1px solid var(--border-subtle);
+      background: rgba(8, 8, 12, 0.96);
+    }
+
+    .mobile-menu.open {
+      display: flex;
+    }
+
+    .mobile-menu a {
+      padding: 0.7rem 0.5rem;
+      color: var(--text-secondary);
+      font-weight: 600;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .mobile-menu a:hover {
+      color: var(--accent-orange);
+    }
+
+    /* ==========================================================================
+       6. LAYOUT, SECTIONS & GLASSMORPHISM CARDS
+       ========================================================================== */
+    main {
+      position: relative;
+      z-index: 1;
+    }
+
+    section {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 5.5rem 1.5rem;
+    }
+
+    .section-header {
+      text-align: center;
+      max-width: 760px;
+      margin: 0 auto 3rem;
+    }
+
+    .section-tag {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 0.76rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent-amber);
+      background: var(--accent-glow-soft);
+      border: 1px solid var(--border-glass);
+      padding: 0.3rem 0.85rem;
+      border-radius: var(--radius-pill);
+      margin-bottom: 0.85rem;
+    }
+
+    .section-title {
+      font-size: clamp(1.85rem, 3.5vw, 2.65rem);
+      font-weight: 800;
+      line-height: 1.18;
+      margin-bottom: 0.85rem;
+      background: linear-gradient(135deg, #ffffff 30%, var(--accent-amber) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .section-desc {
+      color: var(--text-secondary);
+      font-size: 1.02rem;
+    }
+
+    /* Glass Card with Animated Glow */
+    .glass-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-md);
+      padding: 1.5rem;
+      position: relative;
+      overflow: hidden;
+      transition: transform var(--transition-smooth), border-color var(--transition-fast), box-shadow var(--transition-smooth), background var(--transition-fast);
+    }
+
+    .glass-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(400px circle at var(--mx, 50%) var(--my, 0%), rgba(255, 106, 0, 0.12), transparent 60%);
+      opacity: 0;
+      transition: opacity 0.35s ease;
+      pointer-events: none;
+    }
+
+    .glass-card:hover {
+      transform: translateY(-4px);
+      background: var(--bg-card-hover);
+      border-color: rgba(255, 149, 0, 0.55);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.55), 0 0 22px rgba(255, 106, 0, 0.22);
+    }
+
+    .glass-card:hover::before {
+      opacity: 1;
+    }
+
+    /* Scroll Fade-in Reveal */
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.78rem 1.45rem;
+      border-radius: var(--radius-pill);
+      font-weight: 700;
+      font-size: 0.92rem;
+      transition: all var(--transition-fast);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-ember), var(--accent-orange));
+      color: #fff;
+      box-shadow: 0 0 22px var(--accent-glow);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 32px rgba(255, 106, 0, 0.75);
+      color: #fff;
+    }
+
+    .btn-outline {
+      background: rgba(255, 106, 0, 0.08);
+      color: var(--accent-amber);
+      border: 1px solid var(--border-glass);
+    }
+
+    .btn-outline:hover {
+      background: rgba(255, 106, 0, 0.2);
+      border-color: var(--accent-orange);
+      transform: translateY(-2px);
+    }
+
+    /* ==========================================================================
+       7. SECTION 1: HERO
+       ========================================================================== */
+    #hero {
+      min-height: calc(100vh - 68px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding-top: 3.5rem;
+      padding-bottom: 4rem;
+    }
+
+    .hero-emblem-wrap {
+      position: relative;
+      width: 170px;
+      height: 170px;
+      margin-bottom: 1.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .hero-ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 1px dashed rgba(255, 106, 0, 0.45);
+      animation: spinSlow 22s linear infinite;
+    }
+
+    .hero-ring-inner {
+      position: absolute;
+      inset: 14px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 149, 0, 0.28);
+      box-shadow: 0 0 36px rgba(255, 106, 0, 0.22);
+      animation: pulseFox 3.2s ease-in-out infinite;
+    }
+
+    .hero-svg {
+      width: 112px;
+      height: 112px;
+      position: relative;
+      z-index: 2;
+      filter: drop-shadow(0 0 22px var(--accent-glow));
+    }
+
+    @keyframes spinSlow {
+      to { transform: rotate(360deg); }
+    }
+
+    .hero-title {
+      font-size: clamp(2.3rem, 5.5vw, 4.1rem);
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      line-height: 1.08;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, #ffffff 25%, var(--accent-amber) 70%, var(--accent-ember) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-subtitle {
+      max-width: 700px;
+      font-size: 1.12rem;
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+    }
+
+    .hero-cta {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.9rem;
+      margin-bottom: 3rem;
+    }
+
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(130px, 1fr));
+      gap: 1rem;
+      width: 100%;
+      max-width: 820px;
+    }
+
+    .stat-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-md);
+      padding: 1.1rem;
+      backdrop-filter: blur(12px);
+    }
+
+    .stat-num {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: var(--accent-orange);
+      font-family: var(--font-mono);
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    /* ==========================================================================
+       8. SECTION 2: ABOUT FOXES
+       ========================================================================== */
+    .about-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.4rem;
+    }
+
+    .about-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: var(--accent-glow-soft);
+      border: 1px solid var(--border-glass);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1rem;
+      color: var(--accent-orange);
+    }
+
+    .about-card h3 {
+      font-size: 1.15rem;
+      margin-bottom: 0.5rem;
+      color: var(--text-primary);
+    }
+
+    .about-card p {
+      color: var(--text-secondary);
+      font-size: 0.94rem;
+    }
+
+    /* ==========================================================================
+       9. SECTION 3: FOX SPECIES ENCYCLOPEDIA (22 SPECIES)
+       ========================================================================== */
+    .controls-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.85rem;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.75rem;
+      padding: 1rem 1.25rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-md);
+      backdrop-filter: blur(12px);
+    }
+
+    .filter-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .filter-btn {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+      padding: 0.42rem 0.9rem;
+      border-radius: var(--radius-pill);
+      font-size: 0.82rem;
+      font-weight: 600;
+      transition: all var(--transition-fast);
+    }
+
+    .filter-btn:hover,
+    .filter-btn.active {
+      background: var(--accent-orange);
+      color: #fff;
+      border-color: var(--accent-orange);
+      box-shadow: 0 0 14px var(--accent-glow-soft);
+    }
+
+    .search-input {
+      background: rgba(5, 5, 8, 0.85);
+      border: 1px solid var(--border-glass);
+      color: var(--text-primary);
+      padding: 0.6rem 1rem;
+      border-radius: var(--radius-pill);
+      font-size: 0.9rem;
+      min-width: 240px;
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--accent-orange);
+      box-shadow: 0 0 16px var(--accent-glow-soft);
+    }
+
+    .species-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 1.35rem;
+    }
+
+    .species-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+
+    .species-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .species-name {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .species-sci {
+      font-style: italic;
+      font-size: 0.86rem;
+      color: var(--accent-amber);
+      font-family: var(--font-mono);
+    }
+
+    .iucn-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.22rem 0.6rem;
+      border-radius: var(--radius-pill);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+
+    .iucn-LC { background: rgba(34, 197, 94, 0.14); color: var(--status-lc); border: 1px solid rgba(34, 197, 94, 0.35); }
+    .iucn-NT { background: rgba(245, 158, 11, 0.14); color: var(--status-nt); border: 1px solid rgba(245, 158, 11, 0.35); }
+    .iucn-EN { background: rgba(239, 68, 68, 0.16); color: var(--status-en); border: 1px solid rgba(239, 68, 68, 0.45); }
+
+    .species-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.45rem;
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .species-meta span strong {
+      color: var(--text-primary);
+      display: block;
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+
+    /* ==========================================================================
+       10. SECTION 4 & 5 & 11: FACT OF THE DAY + 156 FOX FACTS + LIVE SEARCH
+       ========================================================================== */
+    .fotd-banner {
+      background: linear-gradient(135deg, rgba(255, 106, 0, 0.16), rgba(14, 14, 22, 0.92));
+      border: 1px solid rgba(255, 149, 0, 0.45);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      margin-bottom: 2.5rem;
+      box-shadow: 0 0 36px rgba(255, 106, 0, 0.15);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .fotd-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .fotd-text {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.55;
+    }
+
+    .fotd-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    .facts-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.85rem;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+    }
+
+    .facts-count {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: var(--accent-amber);
+    }
+
+    .facts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1rem;
+      max-height: 680px;
+      overflow-y: auto;
+      padding-right: 0.35rem;
+    }
+
+    .fact-card {
+      padding: 1.15rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+
+    .fact-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .fact-num {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--accent-orange);
+      font-weight: 700;
+    }
+
+    .fact-cat {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.05);
+      padding: 0.15rem 0.55rem;
+      border-radius: var(--radius-pill);
+    }
+
+    .fact-body {
+      font-size: 0.92rem;
+      color: var(--text-secondary);
+    }
+
+    .fav-btn {
+      background: transparent;
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.78rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: var(--radius-sm);
+      transition: all var(--transition-fast);
+    }
+
+    .fav-btn:hover,
+    .fav-btn.saved {
+      color: var(--accent-amber);
+      background: var(--accent-glow-soft);
+    }
+
+    /* ==========================================================================
+       11. SECTION 6: INTERACTIVE QUIZ
+       ========================================================================== */
+    .quiz-box {
+      max-width: 780px;
+      margin: 0 auto;
+    }
+
+    .quiz-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .quiz-progress-track {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-pill);
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+
+    .quiz-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent-ember), var(--accent-amber));
+      transition: width 0.35s ease;
+    }
+
+    .quiz-question {
+      font-size: 1.22rem;
+      font-weight: 700;
+      margin-bottom: 1.25rem;
+    }
+
+    .quiz-options {
+      display: grid;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .quiz-opt {
+      text-align: left;
+      padding: 0.9rem 1.15rem;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-size: 0.95rem;
+      transition: all var(--transition-fast);
+    }
+
+    .quiz-opt:hover:not(:disabled) {
+      border-color: var(--accent-orange);
+      background: var(--accent-glow-soft);
+    }
+
+    .quiz-opt.correct {
+      border-color: var(--status-lc);
+      background: rgba(34, 197, 94, 0.16);
+      color: #dcfce7;
+    }
+
+    .quiz-opt.wrong {
+      border-color: var(--status-en);
+      background: rgba(239, 68, 68, 0.16);
+      color: #fee2e2;
+    }
+
+    .quiz-feedback {
+      font-size: 0.92rem;
+      padding: 0.85rem 1rem;
+      border-radius: var(--radius-sm);
+      background: rgba(255, 106, 0, 0.09);
+      border-left: 3px solid var(--accent-orange);
+      color: var(--text-secondary);
+      margin-bottom: 1.25rem;
+      display: none;
+    }
+
+    /* ==========================================================================
+       12. SECTION 7: TIMELINE / HISTORY
+       ========================================================================== */
+    .timeline {
+      position: relative;
+      max-width: 860px;
+      margin: 0 auto;
+      padding-left: 2rem;
+      border-left: 2px solid var(--border-glass);
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 2rem;
+    }
+
+    .timeline-dot {
+      position: absolute;
+      left: -2.55rem;
+      top: 1.25rem;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent-orange);
+      box-shadow: 0 0 16px var(--accent-orange);
+      border: 3px solid var(--bg-primary);
+    }
+
+    .timeline-era {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--accent-amber);
+      font-weight: 700;
+      margin-bottom: 0.3rem;
+    }
+
+    /* ==========================================================================
+       13. SECTION 8: CONSERVATION & ENDANGERED SPECIES
+       ========================================================================== */
+    .conservation-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.35rem;
+    }
+
+    .meter-bar {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-pill);
+      overflow: hidden;
+      margin: 0.65rem 0;
+    }
+
+    .meter-fill {
+      height: 100%;
+      border-radius: var(--radius-pill);
+    }
+
+    /* ==========================================================================
+       14. SECTION 9: MYTHS VS FACTS
+       ========================================================================== */
+    .myths-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.35rem;
+    }
+
+    .myth-label {
+      font-family: var(--font-mono);
+      font-size: 0.74rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #f87171;
+      margin-bottom: 0.25rem;
+    }
+
+    .fact-label {
+      font-family: var(--font-mono);
+      font-size: 0.74rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--status-lc);
+      margin-top: 0.85rem;
+      margin-bottom: 0.25rem;
+    }
+
+    /* ==========================================================================
+       15. SECTION 10: SVG ILLUSTRATION GALLERY
+       ========================================================================== */
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.35rem;
+    }
+
+    .gallery-card {
+      padding: 1rem;
+      cursor: pointer;
+    }
+
+    .gallery-svg-wrap {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      border-radius: var(--radius-sm);
+      background: radial-gradient(circle at center, rgba(255, 106, 0, 0.14), rgba(5, 5, 9, 0.95));
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      margin-bottom: 0.85rem;
+    }
+
+    .gallery-svg-wrap svg {
+      width: 82%;
+      height: 82%;
+      transition: transform var(--transition-smooth);
+    }
+
+    .gallery-card:hover .gallery-svg-wrap svg {
+      transform: scale(1.07);
+    }
+
+    /* ==========================================================================
+       16. SECTION 12: EXPANDABLE FAQ
+       ========================================================================== */
+    .faq-list {
+      max-width: 860px;
+      margin: 0 auto;
+      display: grid;
+      gap: 0.9rem;
+    }
+
+    .faq-item {
+      padding: 0;
+    }
+
+    .faq-trigger {
+      width: 100%;
+      background: transparent;
+      color: var(--text-primary);
+      padding: 1.15rem 1.4rem;
+      text-align: left;
+      font-size: 1rem;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .faq-icon {
+      color: var(--accent-orange);
+      font-family: var(--font-mono);
+      font-size: 1.25rem;
+      transition: transform 0.25s ease;
+    }
+
+    .faq-item.open .faq-icon {
+      transform: rotate(45deg);
+    }
+
+    .faq-answer {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.35s ease, padding 0.35s ease;
+      color: var(--text-secondary);
+      font-size: 0.94rem;
+      padding: 0 1.4rem;
+    }
+
+    .faq-item.open .faq-answer {
+      max-height: 300px;
+      padding: 0 1.4rem 1.2rem;
+    }
+
+    /* ==========================================================================
+       17. SECTION 13 & 14: CONTACT / ABOUT PROJECT + FOOTER
+       ========================================================================== */
+    .contact-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 0.4rem;
+    }
+
+    .form-control {
+      width: 100%;
+      background: rgba(5, 5, 8, 0.85);
+      border: 1px solid var(--border-glass);
+      color: var(--text-primary);
+      padding: 0.72rem 0.95rem;
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 0.92rem;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--accent-orange);
+      box-shadow: 0 0 14px var(--accent-glow-soft);
+    }
+
+    footer {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--border-glass);
+      background: rgba(5, 5, 8, 0.92);
+      padding: 2.5rem 1.5rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.88rem;
+    }
+
+    .footer-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    /* ==========================================================================
+       18. BACK TO TOP, MODAL LIGHTBOX, EASTER EGG & TOAST
+       ========================================================================== */
+    #back-to-top {
+      position: fixed;
+      right: 1.5rem;
+      bottom: 1.5rem;
+      z-index: 900;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-ember), var(--accent-orange));
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 22px var(--accent-glow);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(12px);
+      transition: all var(--transition-fast);
+    }
+
+    #back-to-top.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    #back-to-top:hover {
+      transform: translateY(-3px);
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 2000;
+      background: rgba(4, 4, 7, 0.86);
+      backdrop-filter: blur(10px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-card {
+      max-width: 620px;
+      width: 100%;
+      text-align: center;
+      border: 1px solid var(--accent-orange);
+      box-shadow: 0 0 45px rgba(255, 106, 0, 0.35);
+    }
+
+    #toast {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      z-index: 3000;
+      background: rgba(16, 16, 24, 0.96);
+      border: 1px solid var(--accent-orange);
+      color: var(--text-primary);
+      padding: 0.75rem 1.35rem;
+      border-radius: var(--radius-pill);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6), 0 0 18px var(--accent-glow-soft);
+      font-size: 0.88rem;
+      font-weight: 600;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s ease;
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ==========================================================================
+       19. RESPONSIVE MEDIA QUERIES
+       ========================================================================== */
+    @media (max-width: 1080px) {
+      .nav-links {
+        display: none;
+      }
+      .hamburger {
+        display: flex;
+      }
+    }
+
+    @media (max-width: 720px) {
+      section {
+        padding: 4rem 1rem;
+      }
+      .hero-stats {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .search-input {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Background Particles & Subtle Cyber Grid -->
+  <canvas id="particle-canvas" aria-hidden="true"></canvas>
+  <div class="ambient-grid" aria-hidden="true"></div>
+
+  <!-- Loading Screen with Animated SVG Fox Logo -->
+  <div id="loading-screen" role="status" aria-label="Loading Fox Den Project">
+    <svg class="loader-logo" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="22,18 48,40 30,58" fill="#ff6a00" opacity="0.9"/>
+      <polygon points="98,18 72,40 90,58" fill="#ff6a00" opacity="0.9"/>
+      <polygon points="28,26 44,40 34,50" fill="#0b0b10"/>
+      <polygon points="92,26 76,40 86,50" fill="#0b0b10"/>
+      <polygon points="30,58 48,40 72,40 90,58 78,86 60,104 42,86" fill="#ff6a00"/>
+      <polygon points="30,58 42,86 60,104 60,72" fill="#ff3c00"/>
+      <polygon points="90,58 78,86 60,104 60,72" fill="#ff9500"/>
+      <polygon points="34,64 52,72 44,84" fill="#fff3e0"/>
+      <polygon points="86,64 68,72 76,84" fill="#fff3e0"/>
+      <polygon points="43,57 52,61 45,64" fill="#050507"/>
+      <polygon points="77,57 68,61 75,64" fill="#050507"/>
+      <polygon points="54,88 66,88 60,97" fill="#050507"/>
+    </svg>
+    <div class="loader-title">Initializing Fox Den V.1.0.0</div>
+    <div class="loader-bar-wrap"><div class="loader-bar"></div></div>
+  </div>
+
+  <!-- Sticky Glassmorphic Navigation Bar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="#hero" class="brand" aria-label="Fox Den Project V.1.0.0 Home">
+        <!-- Custom Geometric SVG Fox Logo -->
+        <svg class="brand-logo" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="20,16 48,38 28,58" fill="#ff6a00"/>
+          <polygon points="100,16 72,38 92,58" fill="#ff9500"/>
+          <polygon points="27,25 43,38 33,49" fill="#050507"/>
+          <polygon points="93,25 77,38 87,49" fill="#050507"/>
+          <polygon points="28,58 48,38 72,38 92,58 78,88 60,106 42,88" fill="#ff6a00"/>
+          <polygon points="28,58 60,72 60,106 42,88" fill="#ff3c00"/>
+          <polygon points="92,58 60,72 60,106 78,88" fill="#ff9500"/>
+          <polygon points="42,57 52,62 45,65" fill="#050507"/>
+          <polygon points="78,57 68,62 75,65" fill="#050507"/>
+          <polygon points="54,89 66,89 60,98" fill="#050507"/>
+        </svg>
+        <span>Fox Den Project</span>
+        <span class="brand-version">V.1.0.0</span>
+      </a>
+
+      <ul class="nav-links" id="desktop-nav">
+        <li><a href="#about">About</a></li>
+        <li><a href="#encyclopedia">Species</a></li>
+        <li><a href="#facts">156 Facts</a></li>
+        <li><a href="#quiz">Quiz</a></li>
+        <li><a href="#timeline">Timeline</a></li>
+        <li><a href="#conservation">Conservation</a></li>
+        <li><a href="#myths">Myths</a></li>
+        <li><a href="#gallery">Gallery</a></li>
+        <li><a href="#faq">FAQ</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <button id="nav-fav-jump" class="fav-pill" type="button" title="Jump to Favorite Facts">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg>
+          <span id="fav-count-badge">0</span>
+        </button>
+        <button id="hamburger-btn" class="hamburger" type="button" aria-label="Toggle Menu" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+
+    <nav id="mobile-menu" class="mobile-menu" aria-label="Mobile Navigation">
+      <a href="#about">About Foxes</a>
+      <a href="#encyclopedia">Species Encyclopedia (22)</a>
+      <a href="#facts">156 Fox Facts &amp; Search</a>
+      <a href="#quiz">Interactive Quiz</a>
+      <a href="#timeline">Evolution Timeline</a>
+      <a href="#conservation">Conservation</a>
+      <a href="#myths">Myths vs. Facts</a>
+      <a href="#gallery">SVG Gallery</a>
+      <a href="#faq">FAQ</a>
+      <a href="#contact">Contact &amp; Project Info</a>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ======================================================================
+         SECTION 1: HERO SECTION
+         ====================================================================== -->
+    <section id="hero">
+      <div class="hero-emblem-wrap reveal">
+        <div class="hero-ring"></div>
+        <div class="hero-ring-inner"></div>
+        <svg class="hero-svg" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="18,14 48,38 26,60" fill="#ff6a00"/>
+          <polygon points="102,14 72,38 94,60" fill="#ff9500"/>
+          <polygon points="25,24 43,38 32,50" fill="#050507"/>
+          <polygon points="95,24 77,38 88,50" fill="#050507"/>
+          <polygon points="26,60 48,38 72,38 94,60 79,90 60,108 41,90" fill="#ff6a00"/>
+          <polygon points="26,60 60,72 60,108 41,90" fill="#ff3c00"/>
+          <polygon points="94,60 60,72 60,108 79,90" fill="#ff9500"/>
+          <polygon points="32,65 51,74 43,86" fill="#ffe6cc" opacity="0.92"/>
+          <polygon points="88,65 69,74 77,86" fill="#ffe6cc" opacity="0.92"/>
+          <polygon points="41,57 52,62 44,66" fill="#050507"/>
+          <polygon points="79,57 68,62 76,66" fill="#050507"/>
+          <circle cx="46" cy="61" r="1.8" fill="#ffb74d"/>
+          <circle cx="74" cy="61" r="1.8" fill="#ffb74d"/>
+          <polygon points="53,90 67,90 60,100" fill="#050507"/>
+        </svg>
+      </div>
+
+      <span class="section-tag reveal">Interactive Vulpes Telemetry Archive</span>
+      <h1 class="hero-title reveal">Fox Den Project V.1.0.0</h1>
+      <p class="hero-subtitle reveal">
+        Explore the biology, evolutionary history, conservation status, and folklore of the world's foxes inside a futuristic, single-file interactive encyclopedia.
+      </p>
+
+      <div class="hero-cta reveal">
+        <a href="#encyclopedia" class="btn btn-primary">Explore 22 Species</a>
+        <a href="#facts" class="btn btn-outline">Search 156 Fox Facts</a>
+        <a href="#quiz" class="btn btn-outline">Launch Fox Quiz</a>
+      </div>
+
+      <div class="hero-stats reveal">
+        <div class="stat-box">
+          <div class="stat-num">22</div>
+          <div class="stat-label">Fox Species</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num">156</div>
+          <div class="stat-label">Verified Facts</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num">12</div>
+          <div class="stat-label">Quiz Questions</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num">6</div>
+          <div class="stat-label">Continents</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         SECTION 2: ABOUT FOXES
+         ====================================================================== -->
+    <section id="about">
+      <div class="section-header reveal">
+        <span class="section-tag">01 // Biological Overview</span>
+        <h2 class="section-title">About Foxes</h2>
+        <p class="section-desc">
+          Small-to-medium omnivorous mammals of the family Canidae, engineered by evolution for agility, acute sensory perception, and remarkable ecological adaptability.
+        </p>
+      </div>
+
+      <div class="about-grid">
+        <article class="glass-card about-card reveal">
+          <div class="about-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+          </div>
+          <h3>True Foxes vs. Fox-Like Canids</h3>
+          <p>Twelve extant species belong to the monophyletic genus <em>Vulpes</em> ("true foxes"). Another group of fox-named canids spans genera such as <em>Lycalopex</em> (South American foxes), <em>Urocyon</em> (gray and island foxes), <em>Otocyon</em> (bat-eared fox), and <em>Cerdocyon</em> (crab-eating fox).</p>
+        </article>
+
+        <article class="glass-card about-card reveal">
+          <div class="about-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </div>
+          <h3>Feline-Like Adaptations</h3>
+          <p>Unlike wolves and domestic dogs, many foxes possess vertically slit pupils for low-light precision, partially retractable claws (especially in gray foxes for tree climbing), and whisker-rich muzzles for navigating tight burrows.</p>
+        </article>
+
+        <article class="glass-card about-card reveal">
+          <div class="about-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg>
+          </div>
+          <h3>Geomagnetic Targeting</h3>
+          <p>Red foxes align their signature high-arcing "mousing" pounce with Earth's magnetic field, tending to leap northeastward when hunting prey hidden beneath deep snow or tall grass.</p>
+        </article>
+
+        <article class="glass-card about-card reveal">
+          <div class="about-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <h3>Global Ecological Reach</h3>
+          <p>Foxes inhabit every continent except Antarctica, thriving in Arctic tundra, hyper-arid Sahara dunes, 17,000-foot Tibetan plateaus, temperate forests, and modern urban metropolises.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         SECTION 3: FOX SPECIES ENCYCLOPEDIA (22 SPECIES)
+         ====================================================================== -->
+    <section id="encyclopedia">
+      <div class="section-header reveal">
+        <span class="section-tag">02 // Taxonomic Database</span>
+        <h2 class="section-title">Fox Species Encyclopedia</h2>
+        <p class="section-desc">
+          Browse 22 recognized fox species across five canid genera. Filter by genus, IUCN conservation status, or search by name and habitat.
+        </p>
+      </div>
+
+      <div class="controls-bar reveal">
+        <div class="filter-group" id="genus-filters" role="group" aria-label="Filter by Genus">
+          <button class="filter-btn active" data-genus="all" type="button">All Genera (22)</button>
+          <button class="filter-btn" data-genus="Vulpes" type="button">Vulpes (12)</button>
+          <button class="filter-btn" data-genus="Lycalopex" type="button">Lycalopex (6)</button>
+          <button class="filter-btn" data-genus="Urocyon" type="button">Urocyon (2)</button>
+          <button class="filter-btn" data-genus="Other" type="button">Otocyon &amp; Cerdocyon (2)</button>
+        </div>
+        <input id="species-search" class="search-input" type="search" placeholder="Filter species, habitat, or status..." aria-label="Search fox species" />
+      </div>
+
+      <div id="species-grid" class="species-grid"></div>
+    </section>
+
+    <!-- ======================================================================
+         SECTION 4, 5 & 11: FACT OF THE DAY + 156 FACTS + REAL-TIME SEARCH
+         ====================================================================== -->
+    <section id="facts">
+      <div class="section-header reveal">
+        <span class="section-tag">03 // Knowledge Matrix</span>
+        <h2 class="section-title">156 Unique Fox Facts</h2>
+        <p class="section-desc">
+          Generate a random Fox Fact of the Day, search all 156 facts in real time, filter by category, or star your favorites to save them locally.
+        </p>
+      </div>
+
+      <!-- Random Fox Fact of the Day -->
+      <div class="fotd-banner reveal" id="fotd-card">
+        <div class="fotd-header">
+          <span class="section-tag" style="margin-bottom:0;">Fox Fact of the Day</span>
+          <span id="fotd-category" class="fact-cat">Biology &amp; Anatomy</span>
+        </div>
+        <p id="fotd-text" class="fotd-text">Loading daily fox telemetry...</p>
+        <div class="fotd-actions">
+          <button id="random-fact-btn" class="btn btn-primary" type="button">Random Fox Fact</button>
+          <button id="copy-fact-btn" class="btn btn-outline" type="button">Copy Fact</button>
+          <button id="fotd-fav-btn" class="btn btn-outline" type="button">Save Favorite</button>
+        </div>
+      </div>
+
+      <!-- Real-Time Search & Category Filters -->
+      <div class="controls-bar reveal">
+        <div class="filter-group" id="fact-cat-filters" role="group" aria-label="Filter facts by category">
+          <button class="filter-btn active" data-cat="all" type="button">All Categories</button>
+          <button class="filter-btn" data-cat="Biology" type="button">Biology</button>
+          <button class="filter-btn" data-cat="Senses & Hunting" type="button">Senses &amp; Hunting</button>
+          <button class="filter-btn" data-cat="Species" type="button">Species</button>
+          <button class="filter-btn" data-cat="Behavior" type="button">Behavior</button>
+          <button class="filter-btn" data-cat="History & Folklore" type="button">History &amp; Folklore</button>
+          <button class="filter-btn" data-cat="Conservation" type="button">Conservation</button>
+          <button class="filter-btn" id="toggle-fav-only" data-cat="favorites" type="button">Favorites Only</button>
+        </div>
+        <input id="facts-search" class="search-input" type="search" placeholder="Real-time fact search..." aria-label="Search fox facts in real time" />
+      </div>
+
+      <div class="facts-toolbar reveal">
+        <span id="facts-count" class="facts-count">Showing 156 of 156 facts</span>
+        <button id="clear-favs-btn" class="filter-btn" type="button">Clear Saved Favorites</button>
+      </div>
+
+      <div id="facts-grid" class="facts-grid" aria-live="polite"></div>
+    </section>
+
+    <!-- ======================================================================
+         SECTION 6: INTERACTIVE FOX QUIZ
+         ====================================================================== -->
+    <section id="quiz">
+      <div class="section-header reveal">
+        <span class="section-tag">04 // Field Assessment</span>
+        <h2 class="section-title">Interactive Fox Quiz</h2>
+        <p class="section-desc">
+          Test your knowledge across 12 questions covering fox taxonomy, sensory biology, and conservation. Your best score is stored in LocalStorage.
+        </p>
+      </div>
+
+      <div class="glass-card quiz-box reveal">
+        <div class="quiz-top">
+          <span id="quiz-counter" class="fact-num">Question 1 of 12</span>
+          <span class="facts-count">Score: <strong id="quiz-score">0</strong> | Best: <strong id="quiz-best">0</strong>/12</span>
+        </div>
+        <div class="quiz-progress-track">
+          <div id="quiz-progress-fill" class="quiz-progress-fill"></div>
+        </div>
+        <div id="quiz-content">
+          <h3 id="quiz-question" class="quiz-question"></h3>
+          <div id="quiz-options" class="quiz-options"></div>
+          <div id="quiz-feedback" class="quiz-feedback"></div>
+          <div style="display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+            <button id="quiz-restart-btn" class="btn btn-outline" type="button">Restart Quiz</button>
+            <button id="quiz-next-btn" class="btn btn-primary" type="button" style="display:none;">Next Question</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         SECTION 7: FOX TIMELINE / HISTORY
+         ====================================================================== -->
+    <section id="timeline">
+      <div class="section-header reveal">
+        <span class="section-tag">05 // Chronology</span>
+        <h2 class="section-title">Evolutionary &amp; Scientific Timeline</h2>
+        <p class="section-desc">
+          From Miocene canid divergence to modern genomic conservation and domestication research.
+        </p>
+      </div>
+
+      <div class="timeline">
+        <article class="timeline-item reveal">
+          <div class="timeline-dot"></div>
+          <div class="glass-card">
+            <div class="timeline-era">~10–12 Million Years Ago (Late Miocene)</div>
+            <h3>Divergence of the Vulpini Lineage</h3>
+            <p>True foxes (<em>Vulpes</em>) diverged from the wolf-dog lineage (<em>Canini</em>) in North America and Eurasia, evolving lighter skeletons and specialized omnivorous dentition.</p>
+          </div>
+        </article>
+
+        <article class="timeline-item reveal">
+          <div class="timeline-dot"></div>
+          <div class="glass-card">
+            <div class="timeline-era">~3.6–5 Million Years Ago (Pliocene)</div>
+            <h3>High-Altitude Origins &amp; Panamanian Dispersal</h3>
+            <p>Fossil evidence such as <em>Vulpes qiuzhudingi</em> on the Tibetan Plateau points to cold-adapted ancestors of modern Arctic foxes, while ancestral South American canids crossed the Panamanian land bridge.</p>
+          </div>
+        </article>
+
+        <article class="timeline-item reveal">
+          <div class="timeline-dot"></div>
+          <div class="glass-card">
+            <div class="timeline-era">~1.4–0.8 Million Years Ago (Pleistocene)</div>
+            <h3>Rapid Radiation of <em>Lycalopex</em></h3>
+            <p>South American foxes diversified rapidly across both sides of the Andes into six distinct species—including the culpeo, Pampas fox, and Darwin's fox.</p>
+          </div>
+        </article>
+
+        <article class="timeline-item reveal">
+          <div class="timeline-dot"></div>
+          <div class="glass-card">
+            <div class="timeline-era">1758 — Carl Linnaeus</div>
+            <h3>Formal Classification of <em>Vulpes vulpes</em></h3>
+            <p>Swedish naturalist Carl Linnaeus formally described the red fox in the 10th edition of <em>Systema Naturae</em>, establishing the taxonomic foundation for true foxes.</p>
+          </div>
+        </article>
+
+        <article class="timeline-item reveal">
+          <div class="timeline-dot"></div>
+          <div class="glass-card">
+            <div class="timeline-era">1883–1887 — Prince Edward Island</div>
+            <h3>Silver Fox Fur Farming Begins</h3>
+            <p>Charles Dalton and Robert Oulton pioneered captive silver fox breeding on Prince Edward Island, Canada, inadvertently selecting for calmer, less fearful behavioral traits.</p>
+          </div>
+        </article>
+
+        <article class="timeline-item reveal">
+          <div class="timeline-dot"></div>
+          <div class="glass-card">
+            <div class="timeline-era">1959 — Novosibirsk, Siberia</div>
+            <h3>Belyayev's Domestication Experiment</h3>
+            <p>Geneticist Dmitry Belyayev launched a landmark selective breeding program with 30 male and 100 female silver foxes, producing tame, human-affectionate foxes with floppy ears and curled tails within generations.</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         SECTION 8: CONSERVATION & ENDANGERED SPECIES
+         ====================================================================== -->
+    <section id="conservation">
+      <div class="section-header reveal">
+        <span class="section-tag">06 // Threat Telemetry</span>
+        <h2 class="section-title">Conservation &amp; Endangered Species</h2>
+        <p class="section-desc">
+          While many fox species are adaptable, island endemics and specialized montane populations face severe extinction pressures.
+        </p>
+      </div>
+
+      <div class="conservation-grid">
+        <article class="glass-card reveal">
+          <div class="species-top">
+            <div>
+              <div class="species-name">Darwin's Fox</div>
+              <div class="species-sci">Lycalopex fulvipes</div>
+            </div>
+            <span class="iucn-badge iucn-EN">Endangered</span>
+          </div>
+          <div class="meter-bar"><div class="meter-fill" style="width:18%; background:var(--status-en);"></div></div>
+          <p style="font-size:0.9rem; color:var(--text-secondary);">Confined primarily to Chiloé Island and Nahuelbuta National Park in Chile, with fewer than 2,500 mature individuals (and mainland estimates as low as ~78–230). Threatened by domestic dog diseases and temperate forest loss.</p>
+        </article>
+
+        <article class="glass-card reveal">
+          <div class="species-top">
+            <div>
+              <div class="species-name">Sierra Nevada Red Fox</div>
+              <div class="species-sci">Vulpes vulpes necator</div>
+            </div>
+            <span class="iucn-badge iucn-EN">ESA Endangered</span>
+          </div>
+          <div class="meter-bar"><div class="meter-fill" style="width:10%; background:var(--status-en);"></div></div>
+          <p style="font-size:0.9rem; color:var(--text-secondary);">The Sierra Nevada Distinct Population Segment was listed as Endangered under the U.S. Endangered Species Act in 2021, with an estimated 18–39 individuals remaining in high alpine habitats above 6,000–9,000 feet.</p>
+        </article>
+
+        <article class="glass-card reveal">
+          <div class="species-top">
+            <div>
+              <div class="species-name">Island Fox</div>
+              <div class="species-sci">Urocyon littoralis</div>
+            </div>
+            <span class="iucn-badge iucn-NT">Near Threatened</span>
+          </div>
+          <div class="meter-bar"><div class="meter-fill" style="width:65%; background:var(--status-nt);"></div></div>
+          <p style="font-size:0.9rem; color:var(--text-secondary);">Endemic to six of California's Channel Islands. After crashing in the 1990s due to golden eagle predation and canine distemper, intensive captive breeding and island restoration achieved one of the fastest mammal recoveries in U.S. history.</p>
+        </article>
+
+        <article class="glass-card reveal">
+          <div class="species-top">
+            <div>
+              <div class="species-name">Sechuran Fox</div>
+              <div class="species-sci">Lycalopex sechurae</div>
+            </div>
+            <span class="iucn-badge iucn-NT">Near Threatened</span>
+          </div>
+          <div class="meter-bar"><div class="meter-fill" style="width:52%; background:var(--status-nt);"></div></div>
+          <p style="font-size:0.9rem; color:var(--text-secondary);">The smallest South American fox, restricted to coastal deserts and dry forests of northwestern Peru and southwestern Ecuador. Faces habitat fragmentation, persecution, and illegal trade.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         SECTION 9: FOX MYTHS VS FACTS
+         ====================================================================== -->
+    <section id="myths">
+      <div class="section-header reveal">
+        <span class="section-tag">07 // Signal vs. Noise</span>
+        <h2 class="section-title">Fox Myths vs. Facts</h2>
+        <p class="section-desc">
+          Separating centuries of folklore and urban legend from peer-reviewed wildlife biology.
+        </p>
+      </div>
+
+      <div class="myths-grid">
+        <article class="glass-card reveal">
+          <div class="myth-label">Myth</div>
+          <p>Foxes seen during the day are always sick or rabid.</p>
+          <div class="fact-label">Verified Fact</div>
+          <p style="color:var(--text-secondary); font-size:0.92rem;">Foxes are primarily crepuscular and nocturnal, but daytime foraging is completely normal—especially in spring and summer when parents feed growing kits.</p>
+        </article>
+
+        <article class="glass-card reveal">
+          <div class="myth-label">Myth</div>
+          <p>Foxes are strictly solitary animals that never cooperate.</p>
+          <div class="fact-label">Verified Fact</div>
+          <p style="color:var(--text-secondary); font-size:0.92rem;">Many fox species form monogamous breeding pairs, and in resource-rich areas, non-breeding adult offspring often stay behind as "helpers" to guard and feed younger siblings.</p>
+        </article>
+
+        <article class="glass-card reveal">
+          <div class="myth-label">Myth</div>
+          <p>All red foxes have bright orange-red fur.</p>
+          <div class="fact-label">Verified Fact</div>
+          <p style="color:var(--text-secondary); font-size:0.92rem;"><em>Vulpes vulpes</em> exhibits striking natural color morphs, including silver (black with white-tipped guard hairs), cross (dark dorsal cross pattern), and rare leucistic or platinum coats.</p>
+        </article>
+
+        <article class="glass-card reveal">
+          <div class="myth-label">Myth</div>
+          <p>Foxes live inside underground dens all year round.</p>
+          <div class="fact-label">Verified Fact</div>
+          <p style="color:var(--text-secondary); font-size:0.92rem;">Adult foxes typically sleep outdoors curled up in their warm, bushy tails. Dens are used mainly during the breeding season to shelter newborn kits or during extreme storms.</p>
+        </article>
+
+        <article class="glass-card reveal">
+          <div class="myth-label">Myth</div>
+          <p>Foxes are pure carnivores that only eat meat.</p>
+          <div class="fact-label">Verified Fact</div>
+          <p style="color:var(--text-secondary); font-size:0.92rem;">Foxes are opportunistic omnivores; berries, fruits, insects, earthworms, and seeds make up a substantial portion of their seasonal diet.</p>
+        </article>
+
+        <article class="glass-card reveal">
+          <div class="myth-label">Myth</div>
+          <p>No canid can climb vertical tree trunks.</p>
+          <div class="fact-label">Verified Fact</div>
+          <p style="color:var(--text-secondary); font-size:0.92rem;">The North American gray fox (<em>Urocyon cinereoargenteus</em>) and island fox have rotating forearms and semi-retractable hooked claws that allow them to climb straight up trees.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         SECTION 10: SVG ILLUSTRATION GALLERY
+         ====================================================================== -->
+    <section id="gallery">
+      <div class="section-header reveal">
+        <span class="section-tag">08 // Vector Visuals</span>
+        <h2 class="section-title">Custom SVG Illustration Gallery</h2>
+        <p class="section-desc">
+          Six bespoke geometric vector illustrations rendered natively in SVG. Click any card to inspect it in full-screen lightbox mode.
+        </p>
+      </div>
+
+      <div id="gallery-grid" class="gallery-grid"></div>
+    </section>
+
+    <!-- ======================================================================
+         SECTION 12: EXPANDABLE FAQ
+         ====================================================================== -->
+    <section id="faq">
+      <div class="section-header reveal">
+        <span class="section-tag">09 // Documentation</span>
+        <h2 class="section-title">Frequently Asked Questions</h2>
+        <p class="section-desc">
+          Answers to common questions about fox biology, urban coexistence, and the Fox Den Project.
+        </p>
+      </div>
+
+      <div class="faq-list" id="faq-list"></div>
+    </section>
+
+    <!-- ======================================================================
+         SECTION 13: CONTACT / ABOUT THE PROJECT
+         ====================================================================== -->
+    <section id="contact">
+      <div class="section-header reveal">
+        <span class="section-tag">10 // Project Terminal</span>
+        <h2 class="section-title">About &amp; Contact</h2>
+        <p class="section-desc">
+          Built as a zero-dependency, single-file interactive encyclopedia celebrating vulpine biodiversity.
+        </p>
+      </div>
+
+      <div class="contact-grid">
+        <article class="glass-card reveal">
+          <h3 style="margin-bottom:0.75rem; color:var(--accent-amber);">About Fox Den Project V.1.0.0</h3>
+          <p style="color:var(--text-secondary); margin-bottom:1rem;">
+            Fox Den Project V.1.0.0 is a self-contained HTML5, CSS3, and vanilla JavaScript web application engineered without external frameworks or third-party assets. It combines taxonomic species data, 156 searchable facts, an interactive quiz, conservation telemetry, and custom vector art in one portable file.
+          </p>
+          <p style="color:var(--text-muted); font-size:0.88rem; font-family:var(--font-mono);">
+            Hint: Try typing the word <strong>fox</strong> anywhere on the page outside of text fields to unlock a hidden protocol.
+          </p>
+        </article>
+
+        <form id="contact-form" class="glass-card reveal">
+          <h3 style="margin-bottom:1rem;">Send Field Feedback</h3>
+          <div class="form-group">
+            <label for="contact-name">Name</label>
+            <input id="contact-name" class="form-control" type="text" required placeholder="Your name" />
+          </div>
+          <div class="form-group">
+            <label for="contact-email">Email</label>
+            <input id="contact-email" class="form-control" type="email" required placeholder="you@example.com" />
+          </div>
+          <div class="form-group">
+            <label for="contact-msg">Message or Fact Suggestion</label>
+            <textarea id="contact-msg" class="form-control" rows="3" required placeholder="Share a species note or feedback..."></textarea>
+          </div>
+          <button class="btn btn-primary" type="submit" style="width:100%;">Transmit Message</button>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <!-- ========================================================================
+       SECTION 14: FOOTER
+       ======================================================================== -->
+  <footer>
+    <div class="footer-inner">
+      <div style="display:flex; align-items:center; gap:0.5rem; color:var(--text-primary); font-weight:700;">
+        <span>Fox Den Project V.1.0.0</span>
+      </div>
+      <p>Zero-Dependency Single-File Edition &bull; Built with Semantic HTML5, CSS Variables &amp; Vanilla JavaScript</p>
+      <p>&copy; <span id="copyright-year">2026</span> Fox Den Project. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- Back to Top Button -->
+  <button id="back-to-top" type="button" aria-label="Back to top">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 15l-6-6-6 6"/></svg>
+  </button>
+
+  <!-- Gallery / Easter Egg Modal -->
+  <div id="modal-backdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="glass-card modal-card">
+      <div id="modal-visual" style="margin-bottom:1rem;"></div>
+      <h3 id="modal-title" style="margin-bottom:0.5rem; color:var(--accent-amber);"></h3>
+      <p id="modal-desc" style="color:var(--text-secondary); margin-bottom:1.25rem;"></p>
+      <button id="modal-close-btn" class="btn btn-primary" type="button">Close</button>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <!-- ========================================================================
+       JAVASCRIPT APPLICATION LOGIC
+       ======================================================================== -->
+  <script>
+    (() => {
+      "use strict";
+
+      /* ----------------------------------------------------------------------
+         1. SAFE LOCALSTORAGE HELPERS
+         ---------------------------------------------------------------------- */
+      const storage = {
+        get(key, fallback) {
+          try {
+            const raw = localStorage.getItem(key);
+            return raw ? JSON.parse(raw) : fallback;
+          } catch (_) {
+            return fallback;
+          }
+        },
+        set(key, val) {
+          try {
+            localStorage.setItem(key, JSON.stringify(val));
+          } catch (_) {
+            // Gracefully ignore storage quota / sandbox restrictions
+          }
+        }
+      };
+
+      /* ----------------------------------------------------------------------
+         2. TOAST NOTIFICATION
+         ---------------------------------------------------------------------- */
+      const toastEl = document.getElementById("toast");
+      let toastTimer = null;
+      function showToast(msg) {
+        toastEl.textContent = msg;
+        toastEl.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2600);
+      }
+
+      /* ----------------------------------------------------------------------
+         3. LOADING SCREEN & FOOTER YEAR
+         ---------------------------------------------------------------------- */
+      document.getElementById("copyright-year").textContent = new Date().getFullYear();
+      window.addEventListener("load", () => {
+        setTimeout(() => {
+          const loader = document.getElementById("loading-screen");
+          if (loader) loader.classList.add("hidden");
+        }, 650);
+      });
+
+      /* ----------------------------------------------------------------------
+         4. ANIMATED PARTICLE BACKGROUND (HTML5 CANVAS)
+         ---------------------------------------------------------------------- */
+      const canvas = document.getElementById("particle-canvas");
+      const ctx = canvas.getContext("2d");
+      let particles = [];
+      let w = 0, h = 0;
+
+      function resizeCanvas() {
+        w = canvas.width = window.innerWidth;
+        h = canvas.height = window.innerHeight;
+        const count = Math.min(70, Math.floor((w * h) / 22000));
+        particles = Array.from({ length: count }, () => ({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          r: Math.random() * 2 + 0.8,
+          vx: (Math.random() - 0.5) * 0.45,
+          vy: (Math.random() - 0.5) * 0.45,
+          alpha: Math.random() * 0.55 + 0.2
+        }));
+      }
+
+      function animateParticles() {
+        ctx.clearRect(0, 0, w, h);
+        for (let i = 0; i < particles.length; i++) {
+          const p = particles[i];
+          p.x += p.vx;
+          p.y += p.vy;
+          if (p.x < 0) p.x = w;
+          if (p.x > w) p.x = 0;
+          if (p.y < 0) p.y = h;
+          if (p.y > h) p.y = 0;
+
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255, 106, 0, ${p.alpha})`;
+          ctx.fill();
+
+          for (let j = i + 1; j < particles.length; j++) {
+            const q = particles[j];
+            const dx = p.x - q.x;
+            const dy = p.y - q.y;
+            const dist = dx * dx + dy * dy;
+            if (dist < 13000) {
+              ctx.beginPath();
+              ctx.moveTo(p.x, p.y);
+              ctx.lineTo(q.x, q.y);
+              ctx.strokeStyle = `rgba(255, 149, 0, ${0.12 * (1 - dist / 13000)})`;
+              ctx.lineWidth = 0.7;
+              ctx.stroke();
+            }
+          }
+        }
+        requestAnimationFrame(animateParticles);
+      }
+      resizeCanvas();
+      animateParticles();
+      window.addEventListener("resize", resizeCanvas);
+
+      /* ----------------------------------------------------------------------
+         5. MOBILE HAMBURGER MENU & BACK TO TOP
+         ---------------------------------------------------------------------- */
+      const hamburgerBtn = document.getElementById("hamburger-btn");
+      const mobileMenu = document.getElementById("mobile-menu");
+      hamburgerBtn.addEventListener("click", () => {
+        const isOpen = mobileMenu.classList.toggle("open");
+        hamburgerBtn.classList.toggle("open", isOpen);
+        hamburgerBtn.setAttribute("aria-expanded", String(isOpen));
+      });
+      mobileMenu.querySelectorAll("a").forEach((link) => {
+        link.addEventListener("click", () => {
+          mobileMenu.classList.remove("open");
+          hamburgerBtn.classList.remove("open");
+          hamburgerBtn.setAttribute("aria-expanded", "false");
+        });
+      });
+
+      const backToTopBtn = document.getElementById("back-to-top");
+      window.addEventListener("scroll", () => {
+        backToTopBtn.classList.toggle("show", window.scrollY > 420);
+      });
+      backToTopBtn.addEventListener("click", () => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+
+      /* ----------------------------------------------------------------------
+         6. SCROLL REVEAL & INTERACTIVE CARD GLOW
+         ---------------------------------------------------------------------- */
+      const revealObserver = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("visible");
+              revealObserver.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.08 }
+      );
+      document.querySelectorAll(".reveal").forEach((el) => revealObserver.observe(el));
+
+      document.addEventListener("mousemove", (e) => {
+        const card = e.target.closest(".glass-card");
+        if (!card) return;
+        const rect = card.getBoundingClientRect();
+        card.style.setProperty("--mx", `${e.clientX - rect.left}px`);
+        card.style.setProperty("--my", `${e.clientY - rect.top}px`);
+      });
+
+      /* ----------------------------------------------------------------------
+         7. FOX SPECIES ENCYCLOPEDIA DATA (22 SPECIES)
+         ---------------------------------------------------------------------- */
+      const speciesData = [
+        { name: "Red Fox", sci: "Vulpes vulpes", genus: "Vulpes", status: "LC", statusLabel: "Least Concern", region: "Northern Hemisphere & Australia", weight: "2.2–14 kg", diet: "Omnivore", note: "Largest true fox and most widely distributed wild carnivore." },
+        { name: "Arctic Fox", sci: "Vulpes lagopus", genus: "Vulpes", status: "LC", statusLabel: "Least Concern", region: "Circumpolar Arctic Tundra", weight: "3–8 kg", diet: "Lemmings, birds, carrion", note: "Coat shifts from brown/gray in summer to pure white in winter." },
+        { name: "Fennec Fox", sci: "Vulpes zerda", genus: "Vulpes", status: "LC", statusLabel: "Least Concern", region: "Sahara & Sinai Deserts", weight: "0.8–1.5 kg", diet: "Insects, rodents, fruit", note: "Smallest canid in the world with 15 cm heat-radiating ears." },
+        { name: "Kit Fox", sci: "Vulpes macrotis", genus: "Vulpes", status: "LC", statusLabel: "Least Concern", region: "SW United States & N Mexico", weight: "1.6–2.7 kg", diet: "Kangaroo rats, insects", note: "Smallest North American fox; furred footpads aid desert traction." },
+        { name: "Swift Fox", sci: "Vulpes velox", genus: "Vulpes", status: "LC", statusLabel: "Least Concern", region: "North American Great Plains", weight: "1.8–3 kg", diet: "Small mammals, grasses, insects", note: "Capable of sprinting over 50 km/h across shortgrass prairies." },
+        { name: "Corsac Fox", sci: "Vulpes corsac", genus: "Vulpes", status: "LC", statusLabel: "Least Concern", region: "Central Asian Steppes", weight: "1.6–3.2 kg", diet: "Rodents, insects, plants", note: "Nomadic steppe fox able to survive long periods without free water." },
+        { name: "Bengal Fox", sci: "Vulpes bengalensis", genus: "Vulpes", status: "LC", statusLabel: "Least Concern", region: "Indian Subcontinent", weight: "1.8–3.2 kg", diet: "Insects, reptiles, fruits", note: "Endemic to the Indian subcontinent; builds multi-chambered dens." },
+        { name: "Blanford's Fox", sci: "Vulpes cana", genus: "Vulpes", status: "LC", statusLabel: "Least Concern", region: "Middle East & Central Asia", weight: "0.9–1.5 kg", diet: "Fruit, insects, rodents", note: "Frugivorous desert-mountain fox with naked paw pads for rock grip." },
+        { name: "Cape Fox", sci: "Vulpes chama", genus: "Vulpes", status: "LC", statusLabel: "Least Concern", region: "Southern Africa", weight: "2.5–4.5 kg", diet: "Rodents, insects, berries", note: "The only true Vulpes species native to sub-Saharan southern Africa." },
+        { name: "Pale Fox", sci: "Vulpes pallida", genus: "Vulpes", status: "LC", statusLabel: "Least Concern", region: "African Sahel", weight: "1.5–3.6 kg", diet: "Insects, plants, small vertebrates", note: "Social Sahelian fox known for extensive communal burrow systems." },
+        { name: "Rüppell's Fox", sci: "Vulpes rueppellii", genus: "Vulpes", status: "LC", statusLabel: "Least Concern", region: "North Africa & Arabian Peninsula", weight: "1.2–3.6 kg", diet: "Insects, lizards, dates", note: "Desert specialist named after German naturalist Eduard Rüppell." },
+        { name: "Tibetan Sand Fox", sci: "Vulpes ferrilata", genus: "Vulpes", status: "LC", statusLabel: "Least Concern", region: "Tibetan & Ladakh Plateaus", weight: "3–4.6 kg", diet: "Plateau pikas, rodents", note: "Distinctive square-jawed skull adapted to elevations up to 5,200 m." },
+        { name: "Gray Fox", sci: "Urocyon cinereoargenteus", genus: "Urocyon", status: "LC", statusLabel: "Least Concern", region: "North & Central America", weight: "3.6–7 kg", diet: "Omnivore (fruits, rabbits, mice)", note: "Semi-retractable claws allow it to climb vertical tree trunks." },
+        { name: "Island Fox", sci: "Urocyon littoralis", genus: "Urocyon", status: "NT", statusLabel: "Near Threatened", region: "California Channel Islands", weight: "1.3–2.8 kg", diet: "Insects, fruits, deer mice", note: "Island dwarf relative of the gray fox; landmark conservation recovery." },
+        { name: "Bat-Eared Fox", sci: "Otocyon megalotis", genus: "Other", status: "LC", statusLabel: "Least Concern", region: "Eastern & Southern Africa", weight: "3–5.3 kg", diet: "Termites, dung beetles", note: "Possesses up to 48–50 teeth and 13 cm ears to hear underground insects." },
+        { name: "Crab-Eating Fox", sci: "Cerdocyon thous", genus: "Other", status: "LC", statusLabel: "Least Concern", region: "Northern & Central South America", weight: "4.5–7.7 kg", diet: "Crabs, insects, fruit, small prey", note: "Monogamous forest-edge canid that forages crustaceans in wet seasons." },
+        { name: "Culpeo (Andean Fox)", sci: "Lycalopex culpaeus", genus: "Lycalopex", status: "LC", statusLabel: "Least Concern", region: "Andes & Patagonia", weight: "5–13.5 kg", diet: "Rodents, hares, birds", note: "Largest South American fox; closely rivals the red fox in size." },
+        { name: "Darwin's Fox", sci: "Lycalopex fulvipes", genus: "Lycalopex", status: "EN", statusLabel: "Endangered", region: "Chiloé Island & Mainland Chile", weight: "1.8–3.9 kg", diet: "Insects, berries, small mammals", note: "First collected by Charles Darwin in 1834; rarest South American fox." },
+        { name: "South American Gray Fox", sci: "Lycalopex griseus", genus: "Lycalopex", status: "LC", statusLabel: "Least Concern", region: "Chile & Argentina", weight: "2.5–5.5 kg", diet: "Rodents, insects, fruit", note: "Also known as the chilla; thrives in Patagonian steppes and scrub." },
+        { name: "Pampas Fox", sci: "Lycalopex gymnocercus", genus: "Lycalopex", status: "LC", statusLabel: "Least Concern", region: "South American Pampas", weight: "3–8 kg", diet: "Rodents, birds, fruit", note: "Plays dead (thanatosis) when cornered by larger predators." },
+        { name: "Sechuran Fox", sci: "Lycalopex sechurae", genus: "Lycalopex", status: "NT", statusLabel: "Near Threatened", region: "Coastal Peru & Ecuador", weight: "2.6–4.2 kg", diet: "Seed pods, insects, mice", note: "Smallest Lycalopex species; adapted to arid coastal deserts." },
+        { name: "Hoary Fox", sci: "Lycalopex vetulus", genus: "Lycalopex", status: "NT", statusLabel: "Near Threatened", region: "Brazilian Cerrado", weight: "2.5–4 kg", diet: "Termites, grasshoppers, fruit", note: "Specializes in termite foraging across central Brazilian savannas." }
+      ];
+
+      let activeGenus = "all";
+      let speciesQuery = "";
+      const speciesGrid = document.getElementById("species-grid");
+
+      function renderSpecies() {
+        const q = speciesQuery.trim().toLowerCase();
+        const filtered = speciesData.filter((s) => {
+          const matchGenus = activeGenus === "all" || s.genus === activeGenus;
+          const matchText =
+            !q ||
+            s.name.toLowerCase().includes(q) ||
+            s.sci.toLowerCase().includes(q) ||
+            s.region.toLowerCase().includes(q) ||
+            s.statusLabel.toLowerCase().includes(q) ||
+            s.note.toLowerCase().includes(q);
+          return matchGenus && matchText;
+        });
+
+        if (!filtered.length) {
+          speciesGrid.innerHTML = `<div class="glass-card" style="grid-column:1/-1;text-align:center;color:var(--text-muted);">No fox species matched your filter. Try clearing your search.</div>`;
+          return;
+        }
+
+        speciesGrid.innerHTML = filtered
+          .map(
+            (s) => `
+          <article class="glass-card species-card">
+            <div>
+              <div class="species-top">
+                <div>
+                  <h3 class="species-name">${s.name}</h3>
+                  <div class="species-sci">${s.sci}</div>
+                </div>
+                <span class="iucn-badge iucn-${s.status}">${s.statusLabel}</span>
+              </div>
+              <p style="margin-top:0.65rem;font-size:0.9rem;color:var(--text-secondary);">${s.note}</p>
+            </div>
+            <div class="species-meta">
+              <span><strong>Region</strong>${s.region}</span>
+              <span><strong>Weight</strong>${s.weight}</span>
+              <span style="grid-column:1/-1;"><strong>Primary Diet</strong>${s.diet}</span>
+            </div>
+          </article>`
+          )
+          .join("");
+      }
+
+      document.getElementById("genus-filters").addEventListener("click", (e) => {
+        const btn = e.target.closest(".filter-btn");
+        if (!btn) return;
+        document.querySelectorAll("#genus-filters .filter-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        activeGenus = btn.dataset.genus;
+        renderSpecies();
+      });
+
+      document.getElementById("species-search").addEventListener("input", (e) => {
+        speciesQuery = e.target.value;
+        renderSpecies();
+      });
+      renderSpecies();
+
+      /* ----------------------------------------------------------------------
+         8. 156 UNIQUE FOX FACTS + LIVE SEARCH + FAVORITES (LOCALSTORAGE)
+         ---------------------------------------------------------------------- */
+      const factsList = [
+        // Biology (1-26)
+        { id: 1, cat: "Biology", text: "A fox's bushy tail is called a 'brush' and serves as both a balance rudder and a winter blanket." },
+        { id: 2, cat: "Biology", text: "Many fox species have vertically slit pupils similar to cats, sharpening depth perception in dim light." },
+        { id: 3, cat: "Biology", text: "The red fox (Vulpes vulpes) has around 47 recognized subspecies across the Northern Hemisphere." },
+        { id: 4, cat: "Biology", text: "Fennec foxes are the smallest members of the family Canidae, often weighing around 1 kg." },
+        { id: 5, cat: "Biology", text: "Bat-eared foxes possess between 46 and 50 teeth—more than almost any other placental mammal." },
+        { id: 6, cat: "Biology", text: "Arctic foxes grow thick fur on the soles of their paws, giving them traction on ice and snow." },
+        { id: 7, cat: "Biology", text: "Gray foxes have rotating radius and ulna bones in their forelegs that help them hug and climb trees." },
+        { id: 8, cat: "Biology", text: "Fox whiskers (vibrissae) grow not only on the muzzle, but also on their wrists to sense nearby obstacles." },
+        { id: 9, cat: "Biology", text: "An Arctic fox's coat can insulate it down to -50°C (-58°F) before its metabolic rate even needs to rise." },
+        { id: 10, cat: "Biology", text: "Fennec fox ears can reach 15 cm (6 inches) long, acting as biological radiators to shed desert heat." },
+        { id: 11, cat: "Biology", text: "Foxes cannot retract their claws fully like cats, except for the semi-retractable hooked claws of Urocyon foxes." },
+        { id: 12, cat: "Biology", text: "A male fox is called a 'dog', 'tod', or 'reynard', while a female is called a 'vixen'." },
+        { id: 13, cat: "Biology", text: "Young foxes are referred to as 'kits', 'cubs', or 'pups', and are born blind and deaf." },
+        { id: 14, cat: "Biology", text: "Wild foxes typically live 2 to 5 years, whereas foxes in human care can live 12 to 15 years or more." },
+        { id: 15, cat: "Biology", text: "The oldest captive fox on record lived past 21 years of age." },
+        { id: 16, cat: "Biology", text: "Foxes shed their winter undercoat in large tufts each spring, looking noticeably sleeker in summer." },
+        { id: 17, cat: "Biology", text: "Unlike wolves, foxes have a relatively lightweight skeleton optimized for leaping and rapid turns." },
+        { id: 18, cat: "Biology", text: "Red foxes have a white tip on their tail—known as a 'tag'—which helps distinguish them from coyotes." },
+        { id: 19, cat: "Biology", text: "The Tibetan sand fox has a uniquely squared skull and narrow eyes adapted for windy high-altitude steppes." },
+        { id: 20, cat: "Biology", text: "Blanford's fox has hairless, padded paws that grip steep, rocky desert cliffs." },
+        { id: 21, cat: "Biology", text: "Foxes have scent glands at the base of their tails (the supracaudal or violet gland) that smell faintly of violets." },
+        { id: 22, cat: "Biology", text: "Fennec foxes have the largest ear-to-body ratio of any member of the order Carnivora." },
+        { id: 23, cat: "Biology", text: "Most foxes have 42 teeth, featuring sharp carnassials for shearing meat and flat molars for crushing berries." },
+        { id: 24, cat: "Biology", text: "Arctic foxes have shorter legs, rounder ears, and shorter snouts than temperate foxes to conserve body heat." },
+        { id: 25, cat: "Biology", text: "Foxes walk on their toes (digitigrade locomotion), which increases stride length and stealth." },
+        { id: 26, cat: "Biology", text: "Vixens typically have a gestation period of 51 to 53 days before giving birth in spring." },
+
+        // Senses & Hunting (27-52)
+        { id: 27, cat: "Senses & Hunting", text: "Red foxes use Earth's magnetic field to gauge distance and direction when pouncing on unseen prey." },
+        { id: 28, cat: "Senses & Hunting", text: "A fox can hear a rodent rustling beneath a meter of packed snow or thick grass." },
+        { id: 29, cat: "Senses & Hunting", text: "Foxes perform a signature 'mousing' leap, arcing high into the air and plunging nose-first into snow." },
+        { id: 30, cat: "Senses & Hunting", text: "Bat-eared foxes can detect termite colonies chewing underground purely by listening." },
+        { id: 31, cat: "Senses & Hunting", text: "Foxes have a tapetum lucidum behind the retina that reflects light, giving their eyes an amber-green night glow." },
+        { id: 32, cat: "Senses & Hunting", text: "A red fox can sprint up to 48–50 km/h (30 mph) in short bursts when evading threats." },
+        { id: 33, cat: "Senses & Hunting", text: "Foxes frequently cache surplus food in shallow holes, covering it with soil or snow for later retrieval." },
+        { id: 34, cat: "Senses & Hunting", text: "They can remember the exact locations of dozens of buried food caches weeks later." },
+        { id: 35, cat: "Senses & Hunting", text: "When hunting birds or rabbits, foxes sometimes perform erratic leaps and rolls to distract curious prey." },
+        { id: 36, cat: "Senses & Hunting", text: "Crab-eating foxes patrol flooded savannas and riverbanks to catch freshwater crabs and frogs." },
+        { id: 37, cat: "Senses & Hunting", text: "Arctic foxes often follow polar bears across sea ice to scavenge leftover seal carcasses." },
+        { id: 38, cat: "Senses & Hunting", text: "Foxes can rotate their triangular ears independently to pinpoint high-frequency squeaks." },
+        { id: 39, cat: "Senses & Hunting", text: "Tibetan sand foxes sometimes trail brown bears, snatching pikas that flee from bear excavations." },
+        { id: 40, cat: "Senses & Hunting", text: "Kit foxes hunt primarily at night to avoid daytime desert heat and larger predators like coyotes." },
+        { id: 41, cat: "Senses & Hunting", text: "Earthworms can make up a major share of a red fox's diet on damp, mild nights." },
+        { id: 42, cat: "Senses & Hunting", text: "Foxes can leap over fences nearly 2 meters (6.5 feet) high from a near-standstill." },
+        { id: 43, cat: "Senses & Hunting", text: "Fennec foxes obtain almost all their hydration from insects, roots, and desert fruits." },
+        { id: 44, cat: "Senses & Hunting", text: "Corsac foxes can travel dozens of kilometers in a single night when rodent populations crash." },
+        { id: 45, cat: "Senses & Hunting", text: "Foxes use urine and anal gland secretions to mark depleted food caches so they don't dig twice." },
+        { id: 46, cat: "Senses & Hunting", text: "Swift foxes can dash straight into nearby escape burrows at speeds exceeding 50 km/h." },
+        { id: 47, cat: "Senses & Hunting", text: "Gray foxes actively forage high in orchard and woodland canopies for persimmons, acorns, and bird eggs." },
+        { id: 48, cat: "Senses & Hunting", text: "Hoary foxes consume so many termites that up to 80% of their diet consists of insects." },
+        { id: 49, cat: "Senses & Hunting", text: "Foxes have a keen sense of smell capable of detecting buried carrion or fruit from far away." },
+        { id: 50, cat: "Senses & Hunting", text: "Red foxes are skilled swimmers and will cross rivers to reach island bird colonies." },
+        { id: 51, cat: "Senses & Hunting", text: "Sechuran foxes eat dry algarrobo seed pods, helping disperse desert plant seeds." },
+        { id: 52, cat: "Senses & Hunting", text: "Foxes stalk prey low to the ground with a silent, feline-like crouch before accelerating." },
+
+        // Species Spotlights (53-80)
+        { id: 53, cat: "Species", text: "There are 12 living species of 'true foxes' in the genus Vulpes." },
+        { id: 54, cat: "Species", text: "The red fox is the largest true fox, with some northern males reaching 14 kg (31 lb)." },
+        { id: 55, cat: "Species", text: "The culpeo (Lycalopex culpaeus) rivals the red fox in size, making it the largest South American fox." },
+        { id: 56, cat: "Species", text: "Darwin's fox was first documented by Charles Darwin on San Pedro Island, Chile, in December 1834." },
+        { id: 57, cat: "Species", text: "The island fox (Urocyon littoralis) lives exclusively on six of California's eight Channel Islands." },
+        { id: 58, cat: "Species", text: "Island foxes are roughly the size of a house cat, an example of island dwarfism." },
+        { id: 59, cat: "Species", text: "Arctic foxes have a 'blue' color morph that stays charcoal-gray or slate-blue year-round." },
+        { id: 60, cat: "Species", text: "Silver, cross, and Samson foxes are all genetic color variants of the same species: Vulpes vulpes." },
+        { id: 61, cat: "Species", text: "The fennec fox is the national animal of Algeria." },
+        { id: 62, cat: "Species", text: "The Tibetan sand fox lives on plateaus up to 5,200 meters (17,000 feet) above sea level." },
+        { id: 63, cat: "Species", text: "Bengal foxes are found exclusively on the Indian subcontinent, from the Himalayan foothills to southern India." },
+        { id: 64, cat: "Species", text: "Rüppell's fox thrives in some of the driest regions of the Sahara and Arabian deserts." },
+        { id: 65, cat: "Species", text: "The pale fox (Vulpes pallida) is one of the least studied carnivores due to its remote Sahelian habitat." },
+        { id: 66, cat: "Species", text: "South American 'foxes' (Lycalopex) are genetically closer to wolves and jackals than to Vulpes foxes." },
+        { id: 67, cat: "Species", text: "The gray fox is considered one of the most basal living lineages of the family Canidae." },
+        { id: 68, cat: "Species", text: "Kit foxes and swift foxes occasionally hybridize where their ranges overlap in New Mexico and Texas." },
+        { id: 69, cat: "Species", text: "Cape foxes are nocturnal hunters that help control rodent populations on South African farmlands." },
+        { id: 70, cat: "Species", text: "Corsac foxes are more social than red foxes and sometimes share burrows in winter." },
+        { id: 71, cat: "Species", text: "Crab-eating foxes are known in Brazil as 'cachorro-do-mato' (bush dog) and travel in pairs." },
+        { id: 72, cat: "Species", text: "Pampas foxes are famous for feigning death until a perceived threat walks away." },
+        { id: 73, cat: "Species", text: "A single Arctic fox tagged in Norway walked over 3,500 km across sea ice to Canada in 76 days." },
+        { id: 74, cat: "Species", text: "Red foxes were introduced to Australia in the 1850s, where they became a major invasive predator." },
+        { id: 75, cat: "Species", text: "The Sierra Nevada red fox is one of the rarest mammals in North America." },
+        { id: 76, cat: "Species", text: "Blanford's fox was named after English naturalist William Thomas Blanford in 1877." },
+        { id: 77, cat: "Species", text: "Bat-eared foxes live in monogamous pairs or small family groups across African savannas." },
+        { id: 78, cat: "Species", text: "Sechuran foxes are the smallest of all South American canids." },
+        { id: 79, cat: "Species", text: "The extinct Falkland Islands wolf (Dusicyon australis) was sometimes called the 'Warrah' or Antarctic fox." },
+        { id: 80, cat: "Species", text: "All 12 Vulpes species share a characteristic slender muzzle and long bushy tail." },
+
+        // Behavior & Social Life (81-106)
+        { id: 81, cat: "Behavior", text: "Foxes communicate using over 28 distinct vocalizations, including barks, screams, gekkering, and whines." },
+        { id: 82, cat: "Behavior", text: "The eerie 'vixen's scream' heard on winter nights is a mating call, not a sign of distress." },
+        { id: 83, cat: "Behavior", text: "Foxes 'gekker'—a rapid chattering sound—during playful sparring or territorial disputes." },
+        { id: 84, cat: "Behavior", text: "A group of foxes is variously called a 'skulk', 'leash', or 'earth'." },
+        { id: 85, cat: "Behavior", text: "Foxes do not form packs like wolves, though family groups share territories in food-rich areas." },
+        { id: 86, cat: "Behavior", text: "Non-breeding adult vixens sometimes stay with their parents to babysit and feed the next year's kits." },
+        { id: 87, cat: "Behavior", text: "Foxes are deeply playful and have been observed tossing objects, stealing golf balls, and playing with dogs." },
+        { id: 88, cat: "Behavior", text: "During winter, foxes curl into tight balls and wrap their tails over their noses to warm inhaled air." },
+        { id: 89, cat: "Behavior", text: "Urban foxes have adapted to city life in London, Tokyo, and Toronto by foraging at night." },
+        { id: 90, cat: "Behavior", text: "Foxes often take over abandoned badger or marmot burrows rather than digging from scratch." },
+        { id: 91, cat: "Behavior", text: "Male foxes bring food to nursing vixens inside the den during the first weeks after birth." },
+        { id: 92, cat: "Behavior", text: "Kits emerge from the den at around 4 to 5 weeks old and begin learning to hunt by 8 weeks." },
+        { id: 93, cat: "Behavior", text: "By autumn, young foxes disperse—sometimes traveling dozens of kilometers to claim new territories." },
+        { id: 94, cat: "Behavior", text: "Foxes use facial expressions, ear angles, and tail posture to signal submission or dominance." },
+        { id: 95, cat: "Behavior", text: "Fennec foxes are unusually social and live in family groups of up to 10 individuals." },
+        { id: 96, cat: "Behavior", text: "Gray foxes often rest high in tree branches during the day to stay safe from coyotes." },
+        { id: 97, cat: "Behavior", text: "Foxes rub their cheeks and chin scent glands on rocks and grass to leave chemical signatures." },
+        { id: 98, cat: "Behavior", text: "When greeting a mate or parent, foxes flatten their ears, wag their tails low, and emit soft whines." },
+        { id: 99, cat: "Behavior", text: "Arctic fox litters can exceed 10 kits in peak lemming years, one of the largest litter sizes in Carnivora." },
+        { id: 100, cat: "Behavior", text: "Swift foxes spend more time in underground dens year-round than almost any other canid." },
+        { id: 101, cat: "Behavior", text: "Red foxes often walk in neat, straight-line tracks—placing hind paws directly into front paw prints." },
+        { id: 102, cat: "Behavior", text: "Urban foxes have been observed waiting for pedestrian traffic signals or using quiet alleyways as corridors." },
+        { id: 103, cat: "Behavior", text: "Foxes rarely bark repeatedly like dogs; their 'wow-wow-wow' bark is short and high-pitched." },
+        { id: 104, cat: "Behavior", text: "Both parents in bat-eared fox pairs share duties guarding and grooming their pups." },
+        { id: 105, cat: "Behavior", text: "Foxes groom themselves fastidiously with their tongues and teeth, much like domestic cats." },
+        { id: 106, cat: "Behavior", text: "When startled, a fox may freeze completely motionless to rely on its camouflage before bolting." },
+
+        // History & Folklore (107-132)
+        { id: 107, cat: "History & Folklore", text: "The Latin word for fox is 'vulpes', which gives the true fox genus its scientific name." },
+        { id: 108, cat: "History & Folklore", text: "In Japanese folklore, Kitsune are intelligent fox spirits that gain up to nine tails as they age." },
+        { id: 109, cat: "History & Folklore", text: "Inari Okami, the Shinto deity of rice and prosperity, is traditionally served by white fox messengers." },
+        { id: 110, cat: "History & Folklore", text: "In Finnish folklore, the aurora borealis is called 'revontulet'—literally 'fox fires'—swept up by an Arctic fox's tail." },
+        { id: 111, cat: "History & Folklore", text: "Aesop's Fables feature the fox in dozens of tales, including 'The Fox and the Grapes' and 'The Fox and the Crow'." },
+        { id: 112, cat: "History & Folklore", text: "In 16th-century Europe, 'Reynard the Fox' became a beloved literary trickster hero." },
+        { id: 113, cat: "History & Folklore", text: "A 16,500-year-old burial site in Jordan revealed a human buried alongside a pet red fox." },
+        { id: 114, cat: "History & Folklore", text: "The constellation Vulpecula ('the little fox') was named by Polish astronomer Johannes Hevelius in 1687." },
+        { id: 115, cat: "History & Folklore", text: "In Korean mythology, the 'gumiho' is a legendary nine-tailed fox capable of shapeshifting." },
+        { id: 116, cat: "History & Folklore", text: "In Chinese mythology, the 'huli jing' is a clever fox spirit appearing in classical stories for over two millennia." },
+        { id: 117, cat: "History & Folklore", text: "The English word 'vixen' originally meant a female fox before becoming a metaphor for a spirited person." },
+        { id: 118, cat: "History & Folklore", text: "Dmitry Belyayev's Siberian fox experiment began in 1959 to study how wolves were domesticated into dogs." },
+        { id: 119, cat: "History & Folklore", text: "Tame foxes in Belyayev's study developed curled tails, spotted coats, and floppy ears—traits of 'domestication syndrome'." },
+        { id: 120, cat: "History & Folklore", text: "In Indigenous Peruvian Moche art, foxes were depicted as warriors, messengers, and lunar symbols." },
+        { id: 121, cat: "History & Folklore", text: "Zao Fox Village in Miyagi Prefecture, Japan, is a sanctuary home to over 100 free-roaming foxes." },
+        { id: 122, cat: "History & Folklore", text: "Traditional European fox hunting with hounds was banned in England and Wales under the Hunting Act 2004." },
+        { id: 123, cat: "History & Folklore", text: "In Celtic lore, foxes were revered as wise guides between the physical world and the spirit realm." },
+        { id: 124, cat: "History & Folklore", text: "The phrase 'outfox' entered English because of the animal's reputation for doubling back to confuse scent hounds." },
+        { id: 125, cat: "History & Folklore", text: "In Cherokee folklore, the fox is portrayed as a clever trickster who outwits larger creatures." },
+        { id: 126, cat: "History & Folklore", text: "Early 20th-century Canadian silver fox pelts sold for astronomical sums, sparking a fur-farming boom." },
+        { id: 127, cat: "History & Folklore", text: "The Moche culture of ancient Peru buried elite leaders with fox-shaped gold and silver ornaments." },
+        { id: 128, cat: "History & Folklore", text: "In Norse-influenced regions, red foxes were linked to autumn harvests and the crackle of fire." },
+        { id: 129, cat: "History & Folklore", text: "Antoine de Saint-Exupéry's 'The Little Prince' (1943) made the tamed fox an enduring literary icon." },
+        { id: 130, cat: "History & Folklore", text: "The word 'renard' replaced the older French word 'goupil' for fox thanks to the popularity of 'Roman de Renart'." },
+        { id: 131, cat: "History & Folklore", text: "In Mesopotamian mythology, the fox was associated with the goddess Ninhursag and clever survival." },
+        { id: 132, cat: "History & Folklore", text: "Fossilized Vulpes teeth from Pliocene Tibet show that cold-adapted foxes evolved millions of years before the Ice Age." },
+
+        // Conservation & Ecology (133-156)
+        { id: 133, cat: "Conservation", text: "Darwin's fox is the only fox species currently listed as Endangered on the IUCN Red List." },
+        { id: 134, cat: "Conservation", text: "The Sierra Nevada red fox distinct population segment has an estimated 18 to 39 wild individuals remaining." },
+        { id: 135, cat: "Conservation", text: "Camera traps in 2010 rediscovered Sierra Nevada red foxes near Sonora Pass after decades of presumed absence." },
+        { id: 136, cat: "Conservation", text: "Island foxes on California's Channel Islands rebounded from ~1,500 individuals in 1999 to over 6,000 after recovery efforts." },
+        { id: 137, cat: "Conservation", text: "Relocating golden eagles and vaccinating island foxes against canine distemper saved the species from extinction." },
+        { id: 138, cat: "Conservation", text: "Swift foxes were extirpated from Canada in the 1930s but successfully reintroduced starting in the 1980s." },
+        { id: 139, cat: "Conservation", text: "Climate warming is pushing larger red foxes northward into Arctic tundra, outcompeting native Arctic foxes." },
+        { id: 140, cat: "Conservation", text: "Domestic dogs pose a major threat to Darwin's fox by transmitting canine distemper and parvovirus." },
+        { id: 141, cat: "Conservation", text: "Wild foxes provide valuable ecological pest control by keeping rodent and rabbit populations balanced." },
+        { id: 142, cat: "Conservation", text: "In fruit orchards, foxes naturally deter mice and voles without damaging fruit crops." },
+        { id: 143, cat: "Conservation", text: "By eating berries and seed pods, foxes act as important seed dispersers across forests and deserts." },
+        { id: 144, cat: "Conservation", text: "Oral rabies vaccination baits dropped by aircraft have virtually eliminated fox-borne rabies in parts of Western Europe." },
+        { id: 145, cat: "Conservation", text: "Habitat corridors and wildlife overpasses help foxes cross highways safely without vehicle collisions." },
+        { id: 146, cat: "Conservation", text: "In Scandinavia, supplemental feeding and red fox management have helped stabilize endangered Fennoscandian Arctic fox populations." },
+        { id: 147, cat: "Conservation", text: "Hybridization with non-native lowland red foxes threatens the genetic purity of alpine Sierra Nevada red foxes." },
+        { id: 148, cat: "Conservation", text: "The Sechuran fox is classified as Near Threatened due to coastal agricultural expansion in Peru." },
+        { id: 149, cat: "Conservation", text: "Hoary foxes in Brazil face habitat loss as Cerrado savannas are converted into soy and cattle pastures." },
+        { id: 150, cat: "Conservation", text: "Rodenticides (rat poisons) pose a severe secondary poisoning risk to urban and suburban foxes." },
+        { id: 151, cat: "Conservation", text: "Sarcoptic mange is one of the leading natural causes of mortality in dense urban red fox populations." },
+        { id: 152, cat: "Conservation", text: "Protecting old-growth temperate rainforests in southern Chile is critical for the survival of Darwin's fox." },
+        { id: 153, cat: "Conservation", text: "Citizen science camera-trap networks help biologists monitor elusive kit and swift fox populations." },
+        { id: 154, cat: "Conservation", text: "Many countries have banned or phased out commercial fur farming, reducing demand for captive fox pelts." },
+        { id: 155, cat: "Conservation", text: "Non-invasive fecal DNA sampling allows researchers to count rare alpine foxes without capturing them." },
+        { id: 156, cat: "Conservation", text: "Conserving apex and mesopredators like foxes maintains trophic balance across grasslands, forests, and tundra." }
+      ];
+
+      let favoriteIds = storage.get("foxd_fav_facts", []);
+      let activeFactCat = "all";
+      let factQuery = "";
+      let currentFotd = factsList[0];
+
+      const factsGrid = document.getElementById("facts-grid");
+      const factsCountEl = document.getElementById("facts-count");
+      const favCountBadge = document.getElementById("fav-count-badge");
+
+      function updateFavBadge() {
+        favCountBadge.textContent = String(favoriteIds.length);
+      }
+
+      function toggleFavorite(id) {
+        if (favoriteIds.includes(id)) {
+          favoriteIds = favoriteIds.filter((x) => x !== id);
+          showToast("Removed from favorites");
+        } else {
+          favoriteIds.push(id);
+          showToast("Saved to favorites!");
+        }
+        storage.set("foxd_fav_facts", favoriteIds);
+        updateFavBadge();
+        renderFacts();
+        updateFotdFavButton();
+      }
+
+      function renderFacts() {
+        const q = factQuery.trim().toLowerCase();
+        const filtered = factsList.filter((f) => {
+          const matchCat =
+            activeFactCat === "all" ||
+            (activeFactCat === "favorites" ? favoriteIds.includes(f.id) : f.cat === activeFactCat);
+          const matchText = !q || f.text.toLowerCase().includes(q) || f.cat.toLowerCase().includes(q);
+          return matchCat && matchText;
+        });
+
+        factsCountEl.textContent = `Showing ${filtered.length} of ${factsList.length} facts`;
+
+        if (!filtered.length) {
+          factsGrid.innerHTML = `<div class="glass-card" style="grid-column:1/-1;text-align:center;color:var(--text-muted);">No facts match your current search or filter.</div>`;
+          return;
+        }
+
+        factsGrid.innerHTML = filtered
+          .map((f) => {
+            const isSaved = favoriteIds.includes(f.id);
+            return `
+            <article class="glass-card fact-card">
+              <div>
+                <div class="fact-head">
+                  <span class="fact-num">#${String(f.id).padStart(3, "0")}</span>
+                  <span class="fact-cat">${f.cat}</span>
+                </div>
+                <p class="fact-body" style="margin-top:0.65rem;">${f.text}</p>
+              </div>
+              <div style="display:flex;justify-content:flex-end;">
+                <button class="fav-btn ${isSaved ? "saved" : ""}" data-fav-id="${f.id}" type="button" aria-label="Favorite fact ${f.id}">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="${isSaved ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg>
+                  ${isSaved ? "Saved" : "Favorite"}
+                </button>
+              </div>
+            </article>`;
+          })
+          .join("");
+      }
+
+      factsGrid.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-fav-id]");
+        if (!btn) return;
+        toggleFavorite(Number(btn.dataset.favId));
+      });
+
+      document.getElementById("fact-cat-filters").addEventListener("click", (e) => {
+        const btn = e.target.closest(".filter-btn");
+        if (!btn) return;
+        document.querySelectorAll("#fact-cat-filters .filter-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        activeFactCat = btn.dataset.cat;
+        renderFacts();
+      });
+
+      document.getElementById("facts-search").addEventListener("input", (e) => {
+        factQuery = e.target.value;
+        renderFacts();
+      });
+
+      document.getElementById("clear-favs-btn").addEventListener("click", () => {
+        favoriteIds = [];
+        storage.set("foxd_fav_facts", favoriteIds);
+        updateFavBadge();
+        renderFacts();
+        updateFotdFavButton();
+        showToast("Cleared all saved favorites");
+      });
+
+      document.getElementById("nav-fav-jump").addEventListener("click", () => {
+        document.querySelectorAll("#fact-cat-filters .filter-btn").forEach((b) => b.classList.remove("active"));
+        document.getElementById("toggle-fav-only").classList.add("active");
+        activeFactCat = "favorites";
+        renderFacts();
+        document.getElementById("facts").scrollIntoView({ behavior: "smooth" });
+      });
+
+      /* Fact of the Day Generator */
+      const fotdTextEl = document.getElementById("fotd-text");
+      const fotdCatEl = document.getElementById("fotd-category");
+      const fotdFavBtn = document.getElementById("fotd-fav-btn");
+
+      function updateFotdFavButton() {
+        const saved = favoriteIds.includes(currentFotd.id);
+        fotdFavBtn.textContent = saved ? "Saved in Favorites" : "Save Favorite";
+      }
+
+      function setRandomFact(useDailySeed = false) {
+        if (useDailySeed) {
+          const dayNum = Math.floor(Date.now() / 86400000);
+          currentFotd = factsList[dayNum % factsList.length];
+        } else {
+          let next = currentFotd;
+          while (next.id === currentFotd.id && factsList.length > 1) {
+            next = factsList[Math.floor(Math.random() * factsList.length)];
+          }
+          currentFotd = next;
+        }
+        fotdTextEl.textContent = currentFotd.text;
+        fotdCatEl.textContent = `${currentFotd.cat} • Fact #${currentFotd.id}`;
+        updateFotdFavButton();
+      }
+
+      document.getElementById("random-fact-btn").addEventListener("click", () => setRandomFact(false));
+      fotdFavBtn.addEventListener("click", () => toggleFavorite(currentFotd.id));
+      document.getElementById("copy-fact-btn").addEventListener("click", () => {
+        const text = `Fox Fact #${currentFotd.id}: ${currentFotd.text}`;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(() => showToast("Fact copied to clipboard!")).catch(() => fallbackCopy(text));
+        } else {
+          fallbackCopy(text);
+        }
+      });
+
+      function fallbackCopy(text) {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand("copy");
+          showToast("Fact copied to clipboard!");
+        } catch (_) {
+          showToast("Unable to copy automatically");
+        }
+        document.body.removeChild(ta);
+      }
+
+      setRandomFact(true);
+      updateFavBadge();
+      renderFacts();
+
+      /* ----------------------------------------------------------------------
+         9. INTERACTIVE FOX QUIZ (12 QUESTIONS + LOCALSTORAGE HIGH SCORE)
+         ---------------------------------------------------------------------- */
+      const quizData = [
+        { q: "Which genus contains all 12 species of 'true foxes'?", opts: ["Lycalopex", "Vulpes", "Urocyon", "Otocyon"], ans: 1, exp: "Vulpes is the monophyletic genus containing all 12 true fox species." },
+        { q: "Which fox is the smallest canid in the world?", opts: ["Kit Fox", "Sechuran Fox", "Fennec Fox", "Blanford's Fox"], ans: 2, exp: "The Fennec fox (Vulpes zerda) weighs only ~0.8 to 1.5 kg, making it the smallest canid." },
+        { q: "Which North American fox is famous for climbing vertical tree trunks?", opts: ["Swift Fox", "Gray Fox", "Red Fox", "Arctic Fox"], ans: 1, exp: "The gray fox (Urocyon cinereoargenteus) has rotating forearms and semi-retractable claws for climbing." },
+        { q: "Which fox species is currently listed as Endangered by the IUCN?", opts: ["Darwin's Fox", "Cape Fox", "Corsac Fox", "Crab-Eating Fox"], ans: 0, exp: "Darwin's fox (Lycalopex fulvipes) in Chile is listed as Endangered, with fewer than 2,500 mature individuals." },
+        { q: "What is a fox's bushy tail traditionally called?", opts: ["Plume", "Brush", "Sweep", "Flag"], ans: 1, exp: "A fox's tail is called a brush; its white tip is called a tag." },
+        { q: "Roughly how many teeth does a bat-eared fox have?", opts: ["28", "36", "42", "48–50"], ans: 3, exp: "Bat-eared foxes have 46 to 50 teeth—specialized for crunching termites and beetles." },
+        { q: "Who led the famous 1959 Siberian silver fox domestication experiment?", opts: ["Carl Linnaeus", "Charles Darwin", "Dmitry Belyayev", "Eduard Rüppell"], ans: 2, exp: "Russian geneticist Dmitry Belyayev launched the Novosibirsk farm-fox study in 1959." },
+        { q: "Which physical force do red foxes align with when pouncing on hidden prey?", opts: ["Ocean tides", "Earth's magnetic field", "Solar wind", "Barometric pressure"], ans: 1, exp: "Studies show red foxes align their mousing leaps with Earth's geomagnetic field." },
+        { q: "In Finnish folklore, what celestial phenomenon is called 'revontulet' (fox fires)?", opts: ["Meteor showers", "Solar eclipses", "Aurora borealis", "Milky Way"], ans: 2, exp: "Finnish legend says an Arctic fox's tail sweeps snow into the sky, sparking the northern lights." },
+        { q: "Which fox has a distinctively square-jawed skull and lives on the Tibetan Plateau?", opts: ["Tibetan Sand Fox", "Pale Fox", "Bengal Fox", "Rüppell's Fox"], ans: 0, exp: "Vulpes ferrilata is adapted to high-altitude plateaus up to 5,200 meters." },
+        { q: "Which South American fox is known for playing dead when cornered?", opts: ["Culpeo", "Pampas Fox", "Hoary Fox", "Sechuran Fox"], ans: 1, exp: "The Pampas fox (Lycalopex gymnocercus) exhibits thanatosis (feigning death) to deter predators." },
+        { q: "On which island chain does the Island Fox (Urocyon littoralis) live?", opts: ["Galápagos Islands", "Channel Islands of California", "Falkland Islands", "Aleutian Islands"], ans: 1, exp: "The island fox is endemic to six of California's eight Channel Islands." }
+      ];
+
+      let quizIdx = 0;
+      let quizScore = 0;
+      let bestScore = storage.get("foxd_quiz_best", 0);
+      let answered = false;
+
+      const quizCounterEl = document.getElementById("quiz-counter");
+      const quizScoreEl = document.getElementById("quiz-score");
+      const quizBestEl = document.getElementById("quiz-best");
+      const quizFillEl = document.getElementById("quiz-progress-fill");
+      const quizQEl = document.getElementById("quiz-question");
+      const quizOptsEl = document.getElementById("quiz-options");
+      const quizFeedbackEl = document.getElementById("quiz-feedback");
+      const quizNextBtn = document.getElementById("quiz-next-btn");
+
+      quizBestEl.textContent = String(bestScore);
+
+      function renderQuizQuestion() {
+        answered = false;
+        quizFeedbackEl.style.display = "none";
+        quizNextBtn.style.display = "none";
+
+        if (quizIdx >= quizData.length) {
+          quizCounterEl.textContent = "Assessment Complete";
+          quizFillEl.style.width = "100%";
+          quizQEl.textContent = `You scored ${quizScore} out of ${quizData.length}!`;
+          const pct = Math.round((quizScore / quizData.length) * 100);
+          quizOptsEl.innerHTML = `<div style="padding:1rem;background:rgba(255,106,0,0.08);border:1px solid var(--border-glass);border-radius:var(--radius-sm);color:var(--text-secondary);">Accuracy: <strong style="color:var(--accent-amber);">${pct}%</strong> &mdash; ${pct >= 80 ? "Master Vulpine Naturalist!" : pct >= 50 ? "Solid Field Knowledge!" : "Explore the encyclopedia and try again!"}</div>`;
+          return;
+        }
+
+        const item = quizData[quizIdx];
+        quizCounterEl.textContent = `Question ${quizIdx + 1} of ${quizData.length}`;
+        quizFillEl.style.width = `${(quizIdx / quizData.length) * 100}%`;
+        quizQEl.textContent = item.q;
+        quizOptsEl.innerHTML = item.opts
+          .map((opt, idx) => `<button class="quiz-opt" data-opt="${idx}" type="button">${opt}</button>`)
+          .join("");
+      }
+
+      quizOptsEl.addEventListener("click", (e) => {
+        const btn = e.target.closest(".quiz-opt");
+        if (!btn || answered) return;
+        answered = true;
+        const chosen = Number(btn.dataset.opt);
+        const item = quizData[quizIdx];
+
+        quizOptsEl.querySelectorAll(".quiz-opt").forEach((b, i) => {
+          b.disabled = true;
+          if (i === item.ans) b.classList.add("correct");
+          else if (i === chosen) b.classList.add("wrong");
+        });
+
+        if (chosen === item.ans) {
+          quizScore++;
+          quizScoreEl.textContent = String(quizScore);
+          if (quizScore > bestScore) {
+            bestScore = quizScore;
+            quizBestEl.textContent = String(bestScore);
+            storage.set("foxd_quiz_best", bestScore);
+          }
+        }
+
+        quizFeedbackEl.textContent = item.exp;
+        quizFeedbackEl.style.display = "block";
+        quizNextBtn.textContent = quizIdx === quizData.length - 1 ? "See Final Score" : "Next Question";
+        quizNextBtn.style.display = "inline-flex";
+      });
+
+      quizNextBtn.addEventListener("click", () => {
+        quizIdx++;
+        renderQuizQuestion();
+      });
+
+      document.getElementById("quiz-restart-btn").addEventListener("click", () => {
+        quizIdx = 0;
+        quizScore = 0;
+        quizScoreEl.textContent = "0";
+        renderQuizQuestion();
+      });
+
+      renderQuizQuestion();
+
+      /* ----------------------------------------------------------------------
+         10. SVG ILLUSTRATION GALLERY & LIGHTBOX MODAL
+         ---------------------------------------------------------------------- */
+      const galleryItems = [
+        {
+          title: "Cyber Red Fox",
+          desc: "Geometric low-poly rendering of Vulpes vulpes with neon ember facets.",
+          svg: `<svg viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg"><polygon points="45,25 80,55 55,80" fill="#ff6a00"/><polygon points="155,25 120,55 145,80" fill="#ff9500"/><polygon points="55,80 80,55 120,55 145,80 125,118 100,138 75,118" fill="#ff6a00"/><polygon points="55,80 100,94 100,138 75,118" fill="#ff3c00"/><polygon points="145,80 100,94 100,138 125,118" fill="#ff9500"/><polygon points="62,88 86,96 76,112" fill="#ffe6cc"/><polygon points="138,88 114,96 124,112" fill="#ffe6cc"/><polygon points="75,78 88,83 78,88" fill="#050507"/><polygon points="125,78 112,83 122,88" fill="#050507"/><polygon points="92,120 108,120 100,131" fill="#050507"/></svg>`
+        },
+        {
+          title: "Arctic Tundra Sentinel",
+          desc: "Winter-morph Vulpes lagopus framed by aurora borealis vectors.",
+          svg: `<svg viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg"><path d="M10,35 Q60,10 110,32 T190,22" stroke="#ff9500" stroke-width="3" fill="none" opacity="0.55"/><path d="M15,48 Q75,24 125,44 T185,36" stroke="#ff6a00" stroke-width="2" fill="none" opacity="0.4"/><polygon points="60,42 82,62 66,78" fill="#e2e8f0"/><polygon points="140,42 118,62 134,78" fill="#cbd5e1"/><polygon points="66,78 82,62 118,62 134,78 118,116 100,130 82,116" fill="#f8fafc"/><polygon points="66,78 100,92 100,130 82,116" fill="#e2e8f0"/><circle cx="84" cy="82" r="3" fill="#0f172a"/><circle cx="116" cy="82" r="3" fill="#0f172a"/><polygon points="94,114 106,114 100,122" fill="#0f172a"/></svg>`
+        },
+        {
+          title: "Fennec Desert Radar",
+          desc: "Oversized parabolic ears of Vulpes zerda against a twilight dune horizon.",
+          svg: `<svg viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg"><path d="M0,120 Q50,102 100,118 T200,112 L200,150 L0,150 Z" fill="#2a1508"/><polygon points="28,18 82,58 58,86" fill="#ffb74d"/><polygon points="172,18 118,58 142,86" fill="#ff9500"/><polygon points="40,30 74,58 58,76" fill="#3a1c0a"/><polygon points="160,30 126,58 142,76" fill="#3a1c0a"/><polygon points="58,86 82,58 118,58 142,86 120,118 100,132 80,118" fill="#ffd180"/><circle cx="83" cy="86" r="4" fill="#050507"/><circle cx="117" cy="86" r="4" fill="#050507"/><polygon points="95,114 105,114 100,122" fill="#050507"/></svg>`
+        },
+        {
+          title: "Canopy Gray Fox",
+          desc: "Urocyon cinereoargenteus silhouette perched beneath stylized woodland arcs.",
+          svg: `<svg viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg"><line x1="20" y1="130" x2="180" y2="105" stroke="#ff6a00" stroke-width="5" stroke-linecap="round"/><polygon points="56,34 80,56 62,74" fill="#94a3b8"/><polygon points="144,34 120,56 138,74" fill="#64748b"/><polygon points="62,74 80,56 120,56 138,74 122,108 100,122 78,108" fill="#94a3b8"/><polygon points="62,74 100,88 100,122 78,108" fill="#ff6a00" opacity="0.65"/><polygon points="138,74 100,88 100,122 122,108" fill="#ff9500" opacity="0.55"/><circle cx="84" cy="78" r="3" fill="#050507"/><circle cx="116" cy="78" r="3" fill="#050507"/><polygon points="94,106 106,106 100,114" fill="#050507"/></svg>`
+        },
+        {
+          title: "Darwin's Mist Forest",
+          desc: "Tribute to endangered Lycalopex fulvipes amid Chiloé temperate forest rings.",
+          svg: `<svg viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg"><circle cx="100" cy="75" r="56" stroke="#ff3c00" stroke-width="1.5" stroke-dasharray="6 4" fill="none"/><polygon points="58,40 82,60 66,80" fill="#7c2d12"/><polygon points="142,40 118,60 134,80" fill="#9a3412"/><polygon points="66,80 82,60 118,60 134,80 120,114 100,128 80,114" fill="#431407"/><polygon points="66,80 100,92 100,128 80,114" fill="#7c2d12"/><circle cx="85" cy="82" r="3.2" fill="#ffb74d"/><circle cx="115" cy="82" r="3.2" fill="#ffb74d"/><polygon points="94,112 106,112 100,120" fill="#050507"/></svg>`
+        },
+        {
+          title: "Kitsune Cyber Crest",
+          desc: "Futuristic nine-point orbital crest honoring Asian fox mythology.",
+          svg: `<svg viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg"><polygon points="100,12 114,42 146,24 128,54 162,62 128,74 150,104 114,90 100,136 86,90 50,104 72,74 38,62 72,54 54,24 86,42" fill="none" stroke="#ff6a00" stroke-width="2.2"/><polygon points="74,56 100,44 126,56 116,96 100,114 84,96" fill="#ff6a00" opacity="0.88"/><polygon points="82,68 94,74 84,78" fill="#050507"/><polygon points="118,68 106,74 116,78" fill="#050507"/><polygon points="95,98 105,98 100,105" fill="#050507"/></svg>`
+        }
+      ];
+
+      const galleryGrid = document.getElementById("gallery-grid");
+      const modalBackdrop = document.getElementById("modal-backdrop");
+      const modalVisual = document.getElementById("modal-visual");
+      const modalTitle = document.getElementById("modal-title");
+      const modalDesc = document.getElementById("modal-desc");
+
+      galleryGrid.innerHTML = galleryItems
+        .map(
+          (item, i) => `
+        <article class="glass-card gallery-card reveal visible" data-gallery-idx="${i}" tabindex="0" role="button" aria-label="View ${item.title}">
+          <div class="gallery-svg-wrap">${item.svg}</div>
+          <h3 style="font-size:1.05rem;margin-bottom:0.25rem;">${item.title}</h3>
+          <p style="font-size:0.86rem;color:var(--text-secondary);">${item.desc}</p>
+        </article>`
+        )
+        .join("");
+
+      function openModal(visualHtml, title, desc) {
+        modalVisual.innerHTML = visualHtml;
+        modalTitle.textContent = title;
+        modalDesc.textContent = desc;
+        modalBackdrop.classList.add("open");
+      }
+
+      galleryGrid.addEventListener("click", (e) => {
+        const card = e.target.closest("[data-gallery-idx]");
+        if (!card) return;
+        const item = galleryItems[Number(card.dataset.galleryIdx)];
+        openModal(`<div style="max-width:340px;margin:0 auto;">${item.svg}</div>`, item.title, item.desc);
+      });
+
+      document.getElementById("modal-close-btn").addEventListener("click", () => modalBackdrop.classList.remove("open"));
+      modalBackdrop.addEventListener("click", (e) => {
+        if (e.target === modalBackdrop) modalBackdrop.classList.remove("open");
+      });
+
+      /* ----------------------------------------------------------------------
+         11. EXPANDABLE FAQ ACCORDION
+         ---------------------------------------------------------------------- */
+      const faqItems = [
+        { q: "How many fox species are recognized worldwide?", a: "There are 12 extant species of 'true foxes' in the genus Vulpes, plus roughly 10+ other canids commonly called foxes across the genera Lycalopex, Urocyon, Otocyon, and Cerdocyon—22 of which are cataloged in our encyclopedia above." },
+        { q: "Are foxes more closely related to dogs or cats?", a: "Foxes are canids (family Canidae), making them evolutionary cousins of wolves, coyotes, and domestic dogs. However, they exhibit convergent traits with cats, such as vertically slit pupils and solitary stalking." },
+        { q: "Can foxes be kept as pets?", a: "In most jurisdictions, wild foxes are illegal or strongly discouraged as pets due to their high energy, burrowing instincts, and strong territorial scent marking. Even Belyayev's selectively bred Russian domesticated foxes require specialized care." },
+        { q: "What should I do if I see a fox during the day?", a: "Observe calmly from a distance and never feed it. Daytime sightings are normal, especially in spring and summer when parents forage for growing kits." },
+        { q: "How does Fox Den Project V.1.0.0 store my quiz score and favorites?", a: "All favorite facts and your highest quiz score are saved directly in your browser's LocalStorage, requiring no server or account." }
+      ];
+
+      const faqListEl = document.getElementById("faq-list");
+      faqListEl.innerHTML = faqItems
+        .map(
+          (item, i) => `
+        <article class="glass-card faq-item">
+          <button class="faq-trigger" type="button" aria-expanded="false" data-faq="${i}">
+            <span>${item.q}</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer">${item.a}</div>
+        </article>`
+        )
+        .join("");
+
+      faqListEl.addEventListener("click", (e) => {
+        const trigger = e.target.closest(".faq-trigger");
+        if (!trigger) return;
+        const item = trigger.parentElement;
+        const isOpen = item.classList.toggle("open");
+        trigger.setAttribute("aria-expanded", String(isOpen));
+      });
+
+      /* ----------------------------------------------------------------------
+         12. CONTACT FORM (IN-PAGE TOAST CONFIRMATION)
+         ---------------------------------------------------------------------- */
+      document.getElementById("contact-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const name = document.getElementById("contact-name").value.trim();
+        showToast(`Thank you, ${name || "Explorer"}! Message logged locally.`);
+        e.target.reset();
+      });
+
+      /* ----------------------------------------------------------------------
+         13. HIDDEN EASTER EGG (TYPING "fox" ANYWHERE OUTSIDE INPUTS)
+         ---------------------------------------------------------------------- */
+      let keyBuffer = "";
+      document.addEventListener("keydown", (e) => {
+        const tag = (e.target && e.target.tagName) || "";
+        if (tag === "INPUT" || tag === "TEXTAREA") return;
+        if (e.key.length === 1) {
+          keyBuffer = (keyBuffer + e.key.toLowerCase()).slice(-3);
+          if (keyBuffer === "fox") {
+            keyBuffer = "";
+            openModal(
+              galleryItems[5].svg.replace('viewBox="0 0 200 150"', 'viewBox="0 0 200 150" style="width:200px;margin:0 auto;"'),
+              "Kitsune Protocol Activated!",
+              "You discovered the hidden Fox Den Project V.1.0.0 Easter Egg by typing 'fox'. Stay curious, stay wild."
+            );
+          }
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
